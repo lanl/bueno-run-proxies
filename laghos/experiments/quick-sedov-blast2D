@@ -1,5 +1,0 @@
-# A version of the Sedov Blast test problem that runs quickly.
-# --description 'Test Sedov Blast'
-# --csv-output quick-sedov.csv
-# --prun mpiexec
-{} -n {{}} {} -p 0 -m /laghos/Laghos/data/cube01_hex.mesh -rs 0 -tf 0.6 -pa
