@@ -53,6 +53,8 @@ class Configuration(experiment.CLIConfiguration):
             default=Configuration.Defaults.executable
         )
 
+        # TODO(skg) Document how relative paths work in bueno run scripts. Note
+        # that paths are relative to the run script.
         self.argparser.add_argument(
             '-i', '--input',
             type=str,
@@ -125,7 +127,7 @@ class Experiment:
             cmd
         )
         if numpe_match is None:
-            es = "Cannot determine numpe from:'{}'".format(cmd)
+            es = F"Cannot determine numpe from:'{cmd}'"
             raise ValueError(es)
         numpe = int(numpe_match.group('numpe'))
         self.data['numpe'].append(numpe)
@@ -164,7 +166,7 @@ class Experiment:
             container.run(r, postaction=self.post_action)
 
     def report(self):
-        logger.emlog('# {} Report'.format(experiment.name()))
+        logger.emlog(F'# {experiment.name()} Report')
 
         header = [
             'numpe',
