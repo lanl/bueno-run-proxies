@@ -62,6 +62,14 @@ class Configuration(experiment.CLIConfiguration):
         )
 
         self.argparser.add_argument(
+            '--name',
+            type=str,
+            help='Names the experiment.',
+            required=False,
+            default=Configuration.Defaults.experiment_name
+        )
+
+        self.argparser.add_argument(
             '--ppn',
             type=int,
             help='Specifies the number of processors per node.',
@@ -82,6 +90,7 @@ class Configuration(experiment.CLIConfiguration):
         description = experiment.name()
         executable = '/laghos/Laghos/laghos'
         input = 'experiments/quick-sedov-blast2D'
+        experiment_name = 'laghos'
         # TODO(skg)
         ppn = None
         prun = 'mpiexec'
@@ -91,6 +100,8 @@ class Experiment:
     def __init__(self, config):
         # The experiment configuration.
         self.config = config
+        # Set the experiment's name
+        experiment.name(self.config.args.name)
         # Data container.
         self.data = {
             'commands': list(),
@@ -197,7 +208,6 @@ class Experiment:
 
 class Laghos:
     def __init__(self, argv):
-        experiment.name('laghos')
         self.desc = 'bueno run script for Laghos experiments.'
         # Experiment configuration, data, and analysis.
         self.experiment = Experiment(Configuration(self.desc, argv))
