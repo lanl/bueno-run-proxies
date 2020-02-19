@@ -1,5 +1,5 @@
 #
-# Copyright (c)      2019 Triad National Security, LLC
+# Copyright (c) 2019-2020 Triad National Security, LLC
 #                         All rights reserved.
 #
 # This file is part of the bueno project. See the LICENSE file at the
@@ -14,8 +14,6 @@ from bueno.public import utils
 
 import csv
 import re
-
-experiment.name('laghos')
 
 
 class Configuration(experiment.CLIConfiguration):
@@ -199,6 +197,7 @@ class Experiment:
 
 class Laghos:
     def __init__(self, argv):
+        experiment.name('laghos')
         self.desc = 'bueno run script for Laghos experiments.'
         # Experiment configuration, data, and analysis.
         self.experiment = Experiment(Configuration(self.desc, argv))
