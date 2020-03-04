@@ -6,6 +6,8 @@
 # top-level directory of this distribution for more information.
 #
 
+from abc import abstractmethod
+
 from bueno.public import container
 from bueno.public import experiment
 from bueno.public import logger
@@ -13,7 +15,99 @@ from bueno.public import metadata
 from bueno.public import utils
 
 import csv
+import os
 import re
+
+
+def build_parser(bname):
+    if bname == 'IMB-MPI1':
+        return MPI1Parser()
+    raise RuntimeError(F'Unrecognized benchmark name: {bname}')
+
+
+class BenchmarkOutputParser:
+    def __init__(self, lines):
+        self.lines = lines
+        self.nlines = len(lines)
+        self.lineno = 0
+
+    def _line(self, advl):
+        if self.lineno == self.nlines:
+            return None
+        line = self.lines[self.lineno]
+        if advl:
+            self.advl()
+        return line
+
+    def advl(self):
+        self.lineno += 1
+
+    def line(self):
+        return self._line(False)
+
+    def nextl(self):
+        return self._line(True)
+
+    @abstractmethod
+    def parse(self):
+        pass
+
+class BenchmarkDatum:
+    def __init__(self):
+        pass
+
+
+
+class MPI1Parser(BenchmarkOutputParser):
+    def __init__(self, lines):
+        super().__init__(lines)
+
+    def _bmname_parse(self):
+        line = self.nextl()
+        match = re.search('# Benchmarking' + r' (?P<bmname>[A-Za-z_]+)', line)
+        if match is None:
+            return None
+        return match.group('bmname')
+
+    def _numpe_parse(self):
+        line = self.nextl()
+        match = re.search('# #processes = ' + r'(?P<numpe>[0-9]+)', line)
+        # Assume this subparser is called only in the correct context.
+        if match is None:
+            raise RuntimeError(F"Expected '# #processes', got:\n{line}")
+        # Eat the next line.
+        self.advl()
+        return int(match.group('numpe'))
+
+    def _metrics_parse(self):
+        line = self.nextl()
+        if line is None:
+            raise RuntimeError('Expected metrics line, but got None.')
+        return line.strip().split()
+
+    def _stats_parse(self):
+        res = list()
+        while not utils.emptystr(self.line()):
+            line = self.nextl()
+            res.append(line.strip().split())
+        if len(res) == 0:
+            raise RuntimeError('Expected run statistics, but found zero.')
+        return res
+
+    def parse(self):
+        while self.line() is not None:
+            bmname = self._bmname_parse()
+            if bmname is None:
+                continue
+            numpe = self._numpe_parse()
+            metrics = self._metrics_parse()
+            stats = self._stats_parse()
+
+            print(F'{bmname}, {numpe}')
+            print(metrics)
+            for s in stats:
+                print(s)
+            print()
 
 
 class Configuration(experiment.CLIConfiguration):
@@ -21,11 +115,25 @@ class Configuration(experiment.CLIConfiguration):
         super().__init__(desc, argv)
         # Get the generate specification and process any arguments provided. Do
         # this as early as possible to see an up-to-date version of the config.
-        # TODO(skg) Provide a way to specify the run parameters as an argument.
-        # Something like: --prun-args '-n {{}} -N {{}}'
-        self.genspec = experiment.readgs(self.args.input, self)
+        # self.genspec = experiment.readgs(self.args.input, self)
 
     def addargs(self):
+        self.argparser.add_argument(
+            '--benchmarks',
+            type=str,
+            help='Comma-delimited list of IMB benchmarks to run.',
+            required=False,
+            default=Configuration.Defaults.benchmarks
+        )
+
+        self.argparser.add_argument(
+            '--bin-dir',
+            type=str,
+            help='Specifies the base directory of the IMB binaries.',
+            required=False,
+            default=Configuration.Defaults.bin_dir
+        )
+
         self.argparser.add_argument(
             '--csv-output',
             type=str,
@@ -40,24 +148,6 @@ class Configuration(experiment.CLIConfiguration):
             help='Describes the experiment.',
             required=False,
             default=Configuration.Defaults.description
-        )
-
-        self.argparser.add_argument(
-            '--executable',
-            type=str,
-            help="Specifies the executable's path.",
-            required=False,
-            default=Configuration.Defaults.executable
-        )
-
-        # TODO(skg) Document how relative paths work in bueno run scripts. Note
-        # that paths are relative to the run script.
-        self.argparser.add_argument(
-            '-i', '--input',
-            type=str,
-            help='Specifies the path to an experiment input.',
-            required=False,
-            default=Configuration.Defaults.input
         )
 
         self.argparser.add_argument(
@@ -85,14 +175,15 @@ class Configuration(experiment.CLIConfiguration):
         )
 
     class Defaults:
-        csv_output = 'data.csv'
-        description = experiment.name()
-        executable = '/laghos/Laghos/laghos'
-        input = 'experiments/quick-sedov-blast2D'
-        experiment_name = 'laghos'
+        # benchmarks = 'IMB-MPI1, IMB-P2P'
+        benchmarks = 'IMB-MPI1'
+        bin_dir = '/IMB'
+        csv_output = 'imb.csv'
+        description = 'Intel MPI Benchmarks'
+        experiment_name = 'imb'
         # TODO(skg)
         ppn = None
-        prun = 'mpiexec'
+        prun = 'srun'
 
 
 class Experiment:
@@ -120,7 +211,8 @@ class Experiment:
         utils.yamlp(pcd, 'Program')
 
     def add_assets(self):
-        metadata.add_asset(metadata.FileAsset(self.config.args.input))
+        return
+
 
     def post_action(self, **kwargs):
         cmd = kwargs.pop('command')
@@ -143,10 +235,10 @@ class Experiment:
         self._parsenstore(kwargs.pop('output'))
 
     def _parsenstore(self, outl):
-        def parsel(l):
-            return float(l.split(':')[1])
-
         lines = [x.rstrip() for x in outl]
+        parser = MPI1Parser(lines)
+        parser.parse()
+        '''
         for line in lines:
             if line.startswith('CG (H1) total time:'):
                 self.data['cgh1'].append(parsel(line))
@@ -154,27 +246,29 @@ class Experiment:
             if line.startswith('CG (L2) total time:'):
                 self.data['cgl2'].append(parsel(line))
                 continue
+        '''
 
     def run(self):
-        # TODO(skg): Add support for multiple specs in an input file.
-        # Generate the run commands for the given experiment.
-        runcmds = experiment.generate(
-            self.config.genspec.format(
-                self.config.args.prun,
-                self.config.args.executable
-            ),
-            # TODO(skg) Add argument that allows generation of this.
-            [2, 4]
+        # Generate the prun commands for the specified job sizes.
+        pruns = experiment.generate(
+            F'{self.config.args.prun} -n {{}}',
+            # TODO(skg)
+            [2]
         )
+        # Generate the run commands for the given benchmarks.
+        cmds = [os.path.join(self.config.args.bin_dir, b.strip())
+                for b in self.config.args.benchmarks.split(',')]
 
         logger.emlog('# Starting Runs...')
 
-        for r in runcmds:
-            logger.log('')
-            container.run(r, postaction=self.post_action)
+        for prun in pruns:
+            for cmd in cmds:
+                logger.log('')
+                container.prun(prun, cmd, postaction=self.post_action)
 
     def report(self):
         logger.emlog(F'# {experiment.name()} Report')
+        return
 
         header = [
             'numpe',
@@ -201,20 +295,20 @@ class Experiment:
                 dataw.writerow(row)
                 table.addrow(row)
 
-        metadata.add_asset(metadata.FileAsset(csvfname))
+        # metadata.add_asset(metadata.FileAsset(csvfname))
         table.emit()
 
 
-class Laghos:
+class Program:
     def __init__(self, argv):
-        self.desc = 'bueno run script for Laghos experiments.'
+        self.desc = 'bueno run script for IMB.'
         # Experiment configuration, data, and analysis.
         self.experiment = Experiment(Configuration(self.desc, argv))
 
     def run(self):
         self.experiment.run()
-        self.experiment.report()
+        # self.experiment.report()
 
 
 def main(argv):
-    Laghos(argv).run()
+    Program(argv).run()
