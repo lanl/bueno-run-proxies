@@ -75,18 +75,29 @@ class BenchmarkOutputParser:
             return None
         return match.group('bmname')
 
-    # TODO(skg) Add threading.
-    def _numpe_parse(self):
+    def _numpe_numt_parse(self):
+        # Convenience function that deals with numt.
+        def _numt(match):
+            numt = match.group('numt')
+            # numt not specified, so default to 1.
+            if numt is None:
+                return 1
+            return int(numt)
+
         line = self.nextl()
-        match = re.search('# #processes = ' + r'(?P<numpe>[0-9]+)', line)
+        res = '# #processes = ' \
+              r'(?P<numpe>[0-9]+)( \(threads: (?P<numt>[0-9]+)\))?'
+        match = re.search(res, line)
         # Assume this subparser is called only in the correct context.
         if match is None:
             raise RuntimeError(F"Expected '# #processes', got:\n{line}")
-        return int(match.group('numpe'))
+        numpe = int(match.group('numpe'))
+        numt = _numt(match)
+        return (numpe, numt)
 
     def _window_size_parse(self):
         if self.line().startswith('#-'):
-            # Eat the next line.
+            # Eat the next line, No window size for this one.
             self.advl()
             return None
         line = self.nextl()
@@ -97,7 +108,6 @@ class BenchmarkOutputParser:
         # Eat the next line.
         self.advl()
         return int(match.group('winsize'))
-
 
     def _mode_parse(self):
         line = self.nextl()
@@ -140,9 +150,11 @@ class BenchmarkOutputParser:
             bmname = self._bmname_parse()
             if bmname is None:
                 continue
+            (numpe, numt) = self._numpe_numt_parse()
             bdargs = {
                 'name': bmname,
-                'numpe': self._numpe_parse(),
+                'numpe': numpe,
+                'numt': numt,
                 'window_size': self._window_size_parse(),
                 'mode': self._mode_parse(),
                 'metrics': self._metrics_parse(),
@@ -152,6 +164,7 @@ class BenchmarkOutputParser:
             self.bmdata.add(BenchmarkDatum(*bdargs))
             print(F"name:        {bdargs['name']}")
             print(F"numpe:       {bdargs['numpe']}")
+            print(F"numt:        {bdargs['numt']}")
             print(F"window_size: {bdargs['window_size']}")
             print(F"mode:        {bdargs['mode']}")
             print(F"metrics:     {bdargs['metrics']}")
@@ -159,9 +172,10 @@ class BenchmarkOutputParser:
 
 
 class BenchmarkDatum:
-    def __init__(self, name, numpe, window_size, mode, metrics, stats):
+    def __init__(self, name, numpe, numt, window_size, mode, metrics, stats):
         self.name = name
         self.numpe = numpe
+        self.numt = numt
         self.window_size = window_size
         self.mode = mode
         self.metrics = metrics
@@ -303,7 +317,7 @@ class Experiment:
 
     def _parsenstore(self, outl):
         # TODO(skg) Auto get name. Consider adding pass user args.
-        parser = build_parser('IMB-IO')
+        parser = build_parser('IMB-MPI1')
         lines = [x.rstrip() for x in outl]
         parser.parse(lines)
 
