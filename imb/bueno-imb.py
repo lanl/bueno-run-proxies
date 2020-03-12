@@ -26,7 +26,6 @@ def build_parser(bname):
                  'IMB-NBC'  # Disabled by default.
                  ]:
         return BenchmarkOutputParser(bname)
-
     raise RuntimeError(F'Unrecognized benchmark name: {bname}')
 
 
@@ -161,14 +160,7 @@ class BenchmarkOutputParser:
                 'stats': self._stats_parse()
             }
 
-            self.bmdata.add(BenchmarkDatum(*bdargs))
-            print(F"name:        {bdargs['name']}")
-            print(F"numpe:       {bdargs['numpe']}")
-            print(F"numt:        {bdargs['numt']}")
-            print(F"window_size: {bdargs['window_size']}")
-            print(F"mode:        {bdargs['mode']}")
-            print(F"metrics:     {bdargs['metrics']}")
-            print(F"stats:       {bdargs['stats']}\n")
+            self.bmdata.add(BenchmarkDatum(**bdargs))
 
 
 class BenchmarkDatum:
@@ -181,6 +173,20 @@ class BenchmarkDatum:
         self.metrics = metrics
         self.stats = stats
 
+    def tabulate(self):
+        logger.log(F"# name:        {self.name}")
+        logger.log(F"# numpe:       {self.numpe}")
+        logger.log(F"# numt:        {self.numt}")
+        logger.log(F"# window_size: {self.window_size}")
+        logger.log(F"# mode:        {self.mode}")
+
+        table = utils.Table()
+        table.addrow(self.metrics, withrule=True)
+        for row in self.stats:
+            table.addrow(row)
+        table.emit()
+        logger.log('')
+
 
 class BenchmarkData:
     def __init__(self, name):
@@ -189,6 +195,10 @@ class BenchmarkData:
 
     def add(self, bmdatum):
         self.data[F'{bmdatum.name}-{bmdatum.numpe}'] = bmdatum
+
+    def tabulate(self):
+        for d in self.data.values():
+            d.tabulate()
 
 
 class Configuration(experiment.CLIConfiguration):
@@ -277,10 +287,7 @@ class Experiment:
         # Data container.
         self.data = {
             'commands': list(),
-            'numpe': list(),
-            'tottime': list(),
-            'cgh1': list(),
-            'cgl2': list()
+            'results': list()
         }
         # Emit program configuration to terminal.
         self.emit_conf()
@@ -298,28 +305,15 @@ class Experiment:
     def post_action(self, **kwargs):
         cmd = kwargs.pop('command')
         tet = kwargs.pop('exectime')
+        app = kwargs.pop('user_data')
 
-        self.data['commands'].append(cmd)
-        self.data['tottime'].append(tet)
+        self._parsenstore(app, kwargs.pop('output'))
 
-        numpe_match = re.search(
-            # TODO(skg) Get -n from cmd matrix.
-            self.config.args.prun + r' -n (?P<numpe>[0-9]+)',
-            cmd
-        )
-        if numpe_match is None:
-            es = F"Cannot determine numpe from:'{cmd}'"
-            raise ValueError(es)
-        numpe = int(numpe_match.group('numpe'))
-        self.data['numpe'].append(numpe)
-
-        self._parsenstore(kwargs.pop('output'))
-
-    def _parsenstore(self, outl):
-        # TODO(skg) Auto get name. Consider adding pass user args.
-        parser = build_parser('IMB-MPI1')
+    def _parsenstore(self, app, outl):
+        parser = build_parser(app)
         lines = [x.rstrip() for x in outl]
         parser.parse(lines)
+        self.data['results'].append(parser.data())
 
     def run(self):
         # Generate the prun commands for the specified job sizes.
@@ -328,48 +322,27 @@ class Experiment:
             # TODO(skg)
             [2]
         )
-        # Generate the run commands for the given benchmarks.
-        cmds = [os.path.join(self.config.args.bin_dir, b.strip())
-                for b in self.config.args.benchmarks.split(',')]
+        # Generate list of apps for the given benchmarks.
+        apps = [b.strip() for b in self.config.args.benchmarks.split(',')]
 
         logger.emlog('# Starting Runs...')
 
         for prun in pruns:
-            for cmd in cmds:
+            for app in apps:
                 logger.log('')
-                container.prun(prun, cmd, postaction=self.post_action)
+                container.prun(
+                    prun,
+                    os.path.join(self.config.args.bin_dir, app),
+                    postaction=self.post_action,
+                    user_data=app
+                )
 
     def report(self):
         logger.emlog(F'# {experiment.name()} Report')
-        return
 
-        header = [
-            'numpe',
-            'tottime',
-            'cgh1',
-            'cgl2'
-        ]
+        for datum in self.data['results']:
+            datum.tabulate()
 
-        data = zip(
-            self.data['numpe'],
-            self.data['tottime'],
-            self.data['cgh1'],
-            self.data['cgl2']
-        )
-
-        table = utils.Table()
-        csvfname = self.config.args.csv_output
-        with open(csvfname, 'w', newline='') as csvfile:
-            dataw = csv.writer(csvfile)
-            dataw.writerow(header)
-            table.addrow(header, withrule=True)
-            for numpe, t, cgh1, cgl2 in data:
-                row = [numpe, t, cgh1, cgl2]
-                dataw.writerow(row)
-                table.addrow(row)
-
-        # metadata.add_asset(metadata.FileAsset(csvfname))
-        table.emit()
 
 
 class Program:
@@ -380,7 +353,7 @@ class Program:
 
     def run(self):
         self.experiment.run()
-        # self.experiment.report()
+        self.experiment.report()
 
 
 def main(argv):
