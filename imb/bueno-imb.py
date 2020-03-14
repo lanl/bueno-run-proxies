@@ -11,6 +11,8 @@ from bueno.public import experiment
 from bueno.public import logger
 from bueno.public import utils
 
+from collections import defaultdict
+
 import csv
 import os
 import re
@@ -84,6 +86,11 @@ class BenchmarkOutputParser:
             return int(numt)
 
         line = self.nextl()
+        # No executions.
+        if line.startswith('# NO SUCCESSFUL EXECUTIONS'):
+            self.advl()
+            return (None, None)
+        # If we are here, then we have something to parse.
         res = '# #processes = ' \
               r'(?P<numpe>[0-9]+)( \(threads: (?P<numt>[0-9]+)\))?'
         match = re.search(res, line)
@@ -150,6 +157,9 @@ class BenchmarkOutputParser:
             if bmname is None:
                 continue
             (numpe, numt) = self._numpe_numt_parse()
+            # Nothing left to parse.
+            if numpe is None:
+                continue
             bdargs = {
                 'name': bmname,
                 'numpe': numpe,
@@ -173,32 +183,62 @@ class BenchmarkDatum:
         self.metrics = metrics
         self.stats = stats
 
-    def tabulate(self):
-        logger.log(F"# name:        {self.name}")
-        logger.log(F"# numpe:       {self.numpe}")
-        logger.log(F"# numt:        {self.numt}")
+    def tabulate(self, csvfname):
+        logger.log(F"#{'-'*79}")
+        logger.log(F"# name: {self.name}")
+        logger.log(F"# numpe: {self.numpe}")
+        logger.log(F"# numt: {self.numt}")
         logger.log(F"# window_size: {self.window_size}")
-        logger.log(F"# mode:        {self.mode}")
+        logger.log(F"# mode: {self.mode}")
+        logger.log(F"#{'-'*79}")
 
         table = utils.Table()
+        print(F'-----------------{csvfname}')
         table.addrow(self.metrics, withrule=True)
         for row in self.stats:
             table.addrow(row)
         table.emit()
-        logger.log('')
+        logger.log('\n')
 
 
 class BenchmarkData:
     def __init__(self, name):
         self.name = name
+        # Key/counter
+        self.datai = defaultdict(int)
         self.data = dict()
 
     def add(self, bmdatum):
-        self.data[F'{bmdatum.name}-{bmdatum.numpe}'] = bmdatum
+        key = F'{bmdatum.name}-{bmdatum.numpe}'
+        kid = self.datai[key]
+
+        self.data[F'{key}-{kid}'] = bmdatum
+        self.datai[key] += 1
 
     def tabulate(self):
-        for d in self.data.values():
-            d.tabulate()
+        for k,d in self.data.items():
+            d.tabulate(k)
+
+
+'''
+class BenchmarkData:
+    def __init__(self, name):
+        self.name = name
+        # Key/counter
+        self.datai = defaultdict(int)
+        self.data = dict()
+
+    def add(self, bmdatum):
+        key = F'{bmdatum.name}-{bmdatum.numpe}'
+        kid = self.datai[key]
+
+        self.data[F'{key}-{kid}'] = bmdatum
+        self.datai[key] += 1
+
+    def tabulate(self):
+        for k,d in self.data.items():
+            d.tabulate(k)
+'''
 
 
 class Configuration(experiment.CLIConfiguration):
@@ -303,10 +343,10 @@ class Experiment:
         return
 
     def post_action(self, **kwargs):
-        cmd = kwargs.pop('command')
-        tet = kwargs.pop('exectime')
         app = kwargs.pop('user_data')
+        cmd = kwargs.pop('command')
 
+        self.data['commands'].append(cmd)
         self._parsenstore(app, kwargs.pop('output'))
 
     def _parsenstore(self, app, outl):
@@ -319,8 +359,9 @@ class Experiment:
         # Generate the prun commands for the specified job sizes.
         pruns = experiment.generate(
             F'{self.config.args.prun} -n {{}}',
-            # TODO(skg)
-            [2]
+            # TODO(skg) Auto-generate.
+            # TODO(skg) Fix parser when no data are available.
+            [1, 2]
         )
         # Generate list of apps for the given benchmarks.
         apps = [b.strip() for b in self.config.args.benchmarks.split(',')]
@@ -340,9 +381,17 @@ class Experiment:
     def report(self):
         logger.emlog(F'# {experiment.name()} Report')
 
-        for datum in self.data['results']:
-            datum.tabulate()
-
+        cmdres = zip(
+            self.data['commands'],
+            self.data['results']
+        )
+        for cmd, res in cmdres:
+            logger.log(F"#{'#'*79}")
+            logger.log(F"#{'#'*79}")
+            logger.log(F'# {cmd}')
+            logger.log(F"#{'#'*79}")
+            logger.log(F"#{'#'*79}\n")
+            res.tabulate()
 
 
 class Program:
