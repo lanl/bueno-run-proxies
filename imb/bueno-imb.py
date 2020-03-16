@@ -9,6 +9,7 @@
 from bueno.public import container
 from bueno.public import experiment
 from bueno.public import logger
+from bueno.public import metadata
 from bueno.public import utils
 
 from collections import defaultdict
@@ -39,7 +40,7 @@ class DataNamer:
     def generate(self, name_prefix):
         kid = self.datai[name_prefix]
         self.datai[name_prefix] += 1
-        return F'{name_prefix}-run:{kid}'
+        return F'{name_prefix}-runid:{kid}'
 
 class BenchmarkOutputParser:
     def __init__(self, name):
@@ -191,7 +192,7 @@ class BenchmarkDatum:
         self.metrics = metrics
         self.stats = stats
 
-    def tabulate(self, csvfname):
+    def tabulate(self, name):
         logger.log(F"#{'-'*79}")
         logger.log(F"# name: {self.name}")
         logger.log(F"# numpe: {self.numpe}")
@@ -201,12 +202,18 @@ class BenchmarkDatum:
         logger.log(F"#{'-'*79}")
 
         table = utils.Table()
-        print(F'-----------------{csvfname}')
-        table.addrow(self.metrics, withrule=True)
-        for row in self.stats:
-            table.addrow(row)
-        table.emit()
-        logger.log('\n')
+        csvfname = F'{name}.csv'
+        with open(csvfname, 'w', newline='') as csvfile:
+            dataw = csv.writer(csvfile)
+            dataw.writerow(self.metrics)
+            table.addrow(self.metrics, withrule=True)
+            for row in self.stats:
+                table.addrow(row)
+                dataw.writerow(row)
+            table.emit()
+            logger.log('\n')
+
+        metadata.add_asset(metadata.FileAsset(csvfname))
 
 
 class BenchmarkData:
