@@ -17,8 +17,8 @@ import csv
 import os
 import re
 
-
-def build_parser(bname):
+# TODO(skg) Make a verify function.
+def build_parser(bname, numpe):
     if bname in ['IMB-MPI1',
                  'IMB-P2P',
                  'IMB-MT',
@@ -27,32 +27,42 @@ def build_parser(bname):
                  'IMB-IO',  # Disabled by default.
                  'IMB-NBC'  # Disabled by default.
                  ]:
-        return BenchmarkOutputParser(bname)
+        return BenchmarkOutputParser(bname, numpe)
     raise RuntimeError(F'Unrecognized benchmark name: {bname}')
 
+
+class DataNamer:
+    def __init__(self):
+        # Key/counter
+        self.datai = defaultdict(int)
+
+    def generate(self, name_prefix):
+        kid = self.datai[name_prefix]
+        self.datai[name_prefix] += 1
+        return F'{name_prefix}-run:{kid}'
 
 class BenchmarkOutputParser:
     def __init__(self, name):
         self.name = name
-        self.lines = None
-        self.nlines = 0
-        self.lineno = 0
-        self.bmdata = BenchmarkData(name)
+        self._bmdata = BenchmarkData(name)
+        self._lines = None
+        self._nlines = 0
+        self._lineno = 0
 
     def _line(self, advl):
-        if self.lineno == self.nlines:
+        if self._lineno == self._nlines:
             return None
-        line = self.lines[self.lineno]
+        line = self._lines[self._lineno]
         if advl:
             self.advl()
         return line
 
     def advl(self):
-        self.lineno += 1
+        self._lineno += 1
 
     def rewindl(self, nlines):
-        self.lineno -= nlines
-        if self.lineno < 0:
+        self._lineno -= nlines
+        if self._lineno < 0:
             raise RuntimeError('Cannot rewind past zero.')
 
     def line(self):
@@ -61,13 +71,10 @@ class BenchmarkOutputParser:
     def nextl(self):
         return self._line(True)
 
-    def data(self):
-        return self.bmdata
-
     def _parse_start(self, lines):
-        self.lines = lines
-        self.nlines = len(lines)
-        self.lineno = 0
+        self._lines = lines
+        self._nlines = len(lines)
+        self._lineno = 0
 
     def _bmname_parse(self):
         line = self.nextl()
@@ -127,7 +134,6 @@ class BenchmarkOutputParser:
         else:
             line = self.nextl()
             match = re.search('#    MODE: ' + r'(?P<mode>[A-Z-]+)', line)
-            # Assume this subparser is called only in the correct context.
             if match is None:
                 self.rewindl(2)
                 return None
@@ -169,8 +175,10 @@ class BenchmarkOutputParser:
                 'metrics': self._metrics_parse(),
                 'stats': self._stats_parse()
             }
+            self._bmdata.add(BenchmarkDatum(**bdargs))
 
-            self.bmdata.add(BenchmarkDatum(**bdargs))
+    def data(self):
+        return self._bmdata
 
 
 class BenchmarkDatum:
@@ -204,41 +212,14 @@ class BenchmarkDatum:
 class BenchmarkData:
     def __init__(self, name):
         self.name = name
-        # Key/counter
-        self.datai = defaultdict(int)
-        self.data = dict()
+        self.data = list()
 
     def add(self, bmdatum):
-        key = F'{bmdatum.name}-{bmdatum.numpe}'
-        kid = self.datai[key]
-
-        self.data[F'{key}-{kid}'] = bmdatum
-        self.datai[key] += 1
+        self.data.append(bmdatum)
 
     def tabulate(self):
-        for k,d in self.data.items():
-            d.tabulate(k)
-
-
-'''
-class BenchmarkData:
-    def __init__(self, name):
-        self.name = name
-        # Key/counter
-        self.datai = defaultdict(int)
-        self.data = dict()
-
-    def add(self, bmdatum):
-        key = F'{bmdatum.name}-{bmdatum.numpe}'
-        kid = self.datai[key]
-
-        self.data[F'{key}-{kid}'] = bmdatum
-        self.datai[key] += 1
-
-    def tabulate(self):
-        for k,d in self.data.items():
-            d.tabulate(k)
-'''
+        for d in self.data:
+            d.tabulate(self.name)
 
 
 class Configuration(experiment.CLIConfiguration):
@@ -308,7 +289,7 @@ class Configuration(experiment.CLIConfiguration):
     class Defaults:
         # benchmarks = 'IMB-MPI1, IMB-P2P'
         benchmarks = 'IMB-MPI1, IMB-P2P, IMB-MT, IMB-EXT'
-        benchmarks = 'IMB-MT'
+        benchmarks = 'IMB-MT, IMB-MT'
         bin_dir = '/IMB'
         csv_output = 'imb.csv'
         description = 'Intel MPI Benchmarks'
@@ -322,12 +303,14 @@ class Experiment:
     def __init__(self, config):
         # The experiment configuration.
         self.config = config
-        # Set the experiment's name
+        # Set the experiment's name.
         experiment.name(self.config.args.name)
+        # The instance responsible for naming data.
+        self.data_namer = DataNamer()
         # Data container.
         self.data = {
             'commands': list(),
-            'results': list()
+            'bmdata': list()
         }
         # Emit program configuration to terminal.
         self.emit_conf()
@@ -343,55 +326,52 @@ class Experiment:
         return
 
     def post_action(self, **kwargs):
-        app = kwargs.pop('user_data')
-        cmd = kwargs.pop('command')
+        udata = kwargs.pop('user_data')
+        app = udata.pop('app')
+        numpe = udata.pop('numpe')
 
-        self.data['commands'].append(cmd)
-        self._parsenstore(app, kwargs.pop('output'))
-
-    def _parsenstore(self, app, outl):
-        parser = build_parser(app)
-        lines = [x.rstrip() for x in outl]
+        # TODO(skg) Verify that the app is one we recognize.
+        name = self.data_namer.generate(F'{app}-numpe:{numpe}')
+        parser = BenchmarkOutputParser(name)
+        lines = [x.rstrip() for x in kwargs.pop('output')]
         parser.parse(lines)
-        self.data['results'].append(parser.data())
+
+        self.data['commands'].append(kwargs.pop('command'))
+        self.data['bmdata'].append(parser.data())
 
     def run(self):
-        # Generate the prun commands for the specified job sizes.
-        pruns = experiment.generate(
-            F'{self.config.args.prun} -n {{}}',
-            # TODO(skg) Auto-generate.
-            # TODO(skg) Fix parser when no data are available.
-            [1, 2]
-        )
+        # TODO(skg) Auto-generate.
+        numpes = [1, 2]
         # Generate list of apps for the given benchmarks.
         apps = [b.strip() for b in self.config.args.benchmarks.split(',')]
 
         logger.emlog('# Starting Runs...')
 
-        for prun in pruns:
-            for app in apps:
+        for app in apps:
+            for numpe in numpes:
                 logger.log('')
                 container.prun(
-                    prun,
+                    # TODO(skg) Make -n an option.
+                    F'{self.config.args.prun} -n {numpe}',
                     os.path.join(self.config.args.bin_dir, app),
                     postaction=self.post_action,
-                    user_data=app
+                    user_data={'app': app, 'numpe': numpe}
                 )
 
     def report(self):
         logger.emlog(F'# {experiment.name()} Report')
 
-        cmdres = zip(
+        cmddata = zip(
             self.data['commands'],
-            self.data['results']
+            self.data['bmdata']
         )
-        for cmd, res in cmdres:
+        for cmd, bmdata in cmddata:
             logger.log(F"#{'#'*79}")
             logger.log(F"#{'#'*79}")
             logger.log(F'# {cmd}')
             logger.log(F"#{'#'*79}")
             logger.log(F"#{'#'*79}\n")
-            res.tabulate()
+            bmdata.tabulate()
 
 
 class Program:
