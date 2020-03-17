@@ -17,6 +17,7 @@ from bueno.public import utils
 from collections import defaultdict
 
 import csv
+import io
 import os
 import re
 
@@ -35,34 +36,41 @@ def build_parser(bname, numpe):
     raise RuntimeError(F'Unrecognized benchmark name: {bname}')
 
 
-class DataNamer:
+class DataLabel:
+    def __init__(self, name, numpe, generation):
+        self.name = str(name)
+        self.numpe = str(numpe)
+        self.generation = str(generation)
+
+
+class DataLabeler:
     def __init__(self):
         # Key/counter
         self.datai = defaultdict(int)
 
-    def generate(self, name_prefix):
-        kid = self.datai[name_prefix]
-        self.datai[name_prefix] += 1
-        return F'{name_prefix}-runid:{kid}'
+    def label(self, name, numpe):
+        key = F'{name}-{numpe}'
+        gen = self.datai[key]
+        self.datai[key] += 1
+        return DataLabel(name, numpe, gen)
 
 
 class BenchmarkOutputParser:
-    def __init__(self, name):
-        self.name = name
-        self._bmdata = BenchmarkData(name)
+    def __init__(self, label):
+        self._bmdata = BenchmarkData(label)
         self._lines = None
         self._nlines = 0
         self._lineno = 0
 
-    def _line(self, advl):
+    def _line(self, eatl):
         if self._lineno == self._nlines:
             return None
         line = self._lines[self._lineno]
-        if advl:
-            self.advl()
+        if eatl:
+            self.eatl()
         return line
 
-    def advl(self):
+    def eatl(self):
         self._lineno += 1
 
     def rewindl(self, nlines):
@@ -100,7 +108,7 @@ class BenchmarkOutputParser:
         line = self.nextl()
         # No executions.
         if line.startswith('# NO SUCCESSFUL EXECUTIONS'):
-            self.advl()
+            self.eatl()
             return (None, None)
         # If we are here, then we have something to parse.
         res = '# #processes = ' \
@@ -116,7 +124,7 @@ class BenchmarkOutputParser:
     def _window_size_parse(self):
         if self.line().startswith('#-'):
             # Eat the next line, No window size for this one.
-            self.advl()
+            self.eatl()
             return None
         line = self.nextl()
         match = re.search('# window_size = ' + r'(?P<winsize>[0-9]+)', line)
@@ -124,7 +132,7 @@ class BenchmarkOutputParser:
         if match is None:
             raise RuntimeError(F"Expected '# window_size', got:\n{line}")
         # Eat the next line.
-        self.advl()
+        self.eatl()
         return int(match.group('winsize'))
 
     def _mode_parse(self):
@@ -143,7 +151,7 @@ class BenchmarkOutputParser:
                 self.rewindl(2)
                 return None
         # Eat the next line.
-        self.advl()
+        self.eatl()
         return match.group('mode')
 
     def _metrics_parse(self):
@@ -196,7 +204,7 @@ class BenchmarkDatum:
         self.metrics = metrics
         self.stats = stats
 
-    def tabulate(self, name):
+    def tabulate(self, label):
         logger.log(F"#{'-'*79}")
         logger.log(F"# name: {self.name}")
         logger.log(F"# numpe: {self.numpe}")
@@ -206,23 +214,29 @@ class BenchmarkDatum:
         logger.log(F"#{'-'*79}")
 
         table = utils.Table()
-        csvfname = F'{name}.csv'
-        with open(csvfname, 'w', newline='') as csvfile:
-            dataw = csv.writer(csvfile)
-            dataw.writerow(self.metrics)
-            table.addrow(self.metrics, withrule=True)
-            for row in self.stats:
-                table.addrow(row)
-                dataw.writerow(row)
-            table.emit()
-            logger.log('\n')
+        sio = io.StringIO(newline=None)
+        dataw = csv.writer(sio)
 
-        metadata.add_asset(metadata.FileAsset(csvfname))
+        dataw.writerow(self.metrics)
+        table.addrow(self.metrics, withrule=True)
+        for row in self.stats:
+            table.addrow(row)
+            dataw.writerow(row)
+        table.emit()
+        logger.log('\n')
+
+        csvfname = F'{self.name}.csv'
+        opath = os.path.join(
+            label.name,
+            F'numpe-{label.numpe}',
+            F'runid-{label.generation}'
+        )
+        metadata.add_asset(metadata.StringIOAsset(sio, csvfname, opath))
 
 
 class BenchmarkData:
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, label):
+        self.label = label
         self.data = list()
 
     def add(self, bmdatum):
@@ -230,7 +244,7 @@ class BenchmarkData:
 
     def tabulate(self):
         for d in self.data:
-            d.tabulate(self.name)
+            d.tabulate(self.label)
 
 
 class Configuration(experiment.CLIConfiguration):
@@ -317,7 +331,7 @@ class Experiment:
         # Set the experiment's name.
         experiment.name(self.config.args.name)
         # The instance responsible for naming data.
-        self.data_namer = DataNamer()
+        self.data_labeler = DataLabeler()
         # Data container.
         self.data = {
             'commands': list(),
@@ -342,8 +356,8 @@ class Experiment:
         numpe = udata.pop('numpe')
 
         # TODO(skg) Verify that the app is one we recognize.
-        name = self.data_namer.generate(F'{app}-numpe:{numpe}')
-        parser = BenchmarkOutputParser(name)
+        label = self.data_labeler.label(app, numpe)
+        parser = BenchmarkOutputParser(label)
         lines = [x.rstrip() for x in kwargs.pop('output')]
         parser.parse(lines)
 
