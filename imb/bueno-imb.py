@@ -270,7 +270,8 @@ class Configuration(experiment.CLIConfiguration):
             help='Comma-delimited list of IMB benchmarks to run.'
                  ' (default: %(default)s)',
             required=False,
-            default=Configuration.Defaults.benchmarks
+            default=Configuration.Defaults.benchmarks,
+            choices=Benchmark.available()
         )
 
         self.argparser.add_argument(
