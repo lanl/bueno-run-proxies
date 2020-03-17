@@ -268,7 +268,8 @@ class Configuration(experiment.CLIConfiguration):
             '--benchmarks',
             type=str,
             help='Comma-delimited list of IMB benchmarks to run.'
-                 ' (default: %(default)s)',
+                 ' (default: %(default)s)'
+                 F" (choices: {','.join(Benchmark.available())})",
             required=False,
             default=Configuration.Defaults.benchmarks
         )
