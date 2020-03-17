@@ -32,7 +32,7 @@ class Benchmark:
                 'IMB-RMA',
                 'IMB-IO',
                 'IMB-NBC'
-               ]
+                ]
 
     @staticmethod
     def recognized(name):
