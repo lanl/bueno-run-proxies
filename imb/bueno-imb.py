@@ -22,18 +22,27 @@ import os
 import re
 
 
-# TODO(skg) Make a verify function.
-def build_parser(bname, numpe):
-    if bname in ['IMB-MPI1',
-                 'IMB-P2P',
-                 'IMB-MT',
-                 'IMB-EXT',
-                 'IMB-RMA',
-                 'IMB-IO',  # Disabled by default.
-                 'IMB-NBC'  # Disabled by default.
-                 ]:
-        return BenchmarkOutputParser(bname, numpe)
-    raise RuntimeError(F'Unrecognized benchmark name: {bname}')
+class Benchmark:
+    @staticmethod
+    def available():
+        return ['IMB-MPI1',
+                'IMB-P2P',
+                'IMB-MT',
+                'IMB-EXT',
+                'IMB-RMA',
+                'IMB-IO',
+                'IMB-NBC'
+               ]
+
+    @staticmethod
+    def recognized(name):
+        return name in Benchmark.available()
+
+    @staticmethod
+    def default_list():
+        # Disabled by default.
+        dbd = ['IMB-IO', 'IMB-NBC']
+        return ','.join([x for x in Benchmark.available() if x not in dbd])
 
 
 class DataLabel:
@@ -258,7 +267,8 @@ class Configuration(experiment.CLIConfiguration):
         self.argparser.add_argument(
             '--benchmarks',
             type=str,
-            help='Comma-delimited list of IMB benchmarks to run.',
+            help='Comma-delimited list of IMB benchmarks to run.'
+                 ' (default: %(default)s)',
             required=False,
             default=Configuration.Defaults.benchmarks
         )
@@ -266,23 +276,17 @@ class Configuration(experiment.CLIConfiguration):
         self.argparser.add_argument(
             '--bin-dir',
             type=str,
-            help='Specifies the base directory of the IMB binaries.',
+            help='Specifies the base directory of the IMB binaries.'
+                 ' (default: %(default)s)',
             required=False,
             default=Configuration.Defaults.bin_dir
         )
 
         self.argparser.add_argument(
-            '--csv-output',
-            type=str,
-            help='Names the generated CSV file produced by a run.',
-            required=False,
-            default=Configuration.Defaults.csv_output
-        )
-
-        self.argparser.add_argument(
             '-d', '--description',
             type=str,
-            help='Describes the experiment.',
+            help='Describes the experiment.'
+                 ' (default: %(default)s)',
             required=False,
             default=Configuration.Defaults.description
         )
@@ -290,7 +294,8 @@ class Configuration(experiment.CLIConfiguration):
         self.argparser.add_argument(
             '--name',
             type=str,
-            help='Names the experiment.',
+            help='Names the experiment.'
+                 ' (default: %(default)s)',
             required=False,
             default=Configuration.Defaults.experiment_name
         )
@@ -306,17 +311,15 @@ class Configuration(experiment.CLIConfiguration):
         self.argparser.add_argument(
             '--prun',
             type=str,
-            help='Specifies the parallel launcher to use.',
+            help='Specifies the parallel launcher to use.'
+                 ' (default: %(default)s)',
             required=False,
             default=Configuration.Defaults.prun
         )
 
     class Defaults:
-        # benchmarks = 'IMB-MPI1, IMB-P2P'
-        benchmarks = 'IMB-MPI1, IMB-P2P, IMB-MT, IMB-EXT'
-        benchmarks = 'IMB-MT, IMB-MT'
+        benchmarks = Benchmark.default_list()
         bin_dir = '/IMB'
-        csv_output = 'imb.csv'
         description = 'Intel MPI Benchmarks'
         experiment_name = 'imb'
         # TODO(skg)
@@ -339,23 +342,17 @@ class Experiment:
         }
         # Emit program configuration to terminal.
         self.emit_conf()
-        # Add assets to collection of metadata.
-        self.add_assets()
 
     def emit_conf(self):
         pcd = dict()
         pcd['Program'] = vars(self.config.args)
         utils.yamlp(pcd, 'Program')
 
-    def add_assets(self):
-        return
-
     def post_action(self, **kwargs):
         udata = kwargs.pop('user_data')
         app = udata.pop('app')
         numpe = udata.pop('numpe')
 
-        # TODO(skg) Verify that the app is one we recognize.
         label = self.data_labeler.label(app, numpe)
         parser = BenchmarkOutputParser(label)
         lines = [x.rstrip() for x in kwargs.pop('output')]
@@ -374,6 +371,9 @@ class Experiment:
 
         for app in apps:
             for numpe in numpes:
+                if not Benchmark.recognized(app):
+                    logger.emlog(F'# SKIPPING UNRECOGNIZED BENCHMARK: {app}')
+                    continue
                 logger.log('')
                 container.prun(
                     # TODO(skg) Make -n an option.
