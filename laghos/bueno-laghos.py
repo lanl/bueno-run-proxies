@@ -13,6 +13,7 @@ from bueno.public import metadata
 from bueno.public import utils
 
 import csv
+import io
 import re
 
 
@@ -164,7 +165,7 @@ class Experiment:
                 self.config.args.executable
             ),
             # TODO(skg) Add argument that allows generation of this.
-            [2, 4]
+            [2]
         )
 
         logger.emlog('# Starting Runs...')
@@ -191,17 +192,17 @@ class Experiment:
         )
 
         table = utils.Table()
-        csvfname = self.config.args.csv_output
-        with open(csvfname, 'w', newline='') as csvfile:
-            dataw = csv.writer(csvfile)
-            dataw.writerow(header)
-            table.addrow(header, withrule=True)
-            for numpe, t, cgh1, cgl2 in data:
-                row = [numpe, t, cgh1, cgl2]
-                dataw.writerow(row)
-                table.addrow(row)
+        sio = io.StringIO(newline=None)
+        dataw = csv.writer(sio)
+        dataw.writerow(header)
+        table.addrow(header, withrule=True)
+        for numpe, t, cgh1, cgl2 in data:
+            row = [numpe, t, cgh1, cgl2]
+            dataw.writerow(row)
+            table.addrow(row)
 
-        metadata.add_asset(metadata.FileAsset(csvfname))
+        csvfname = self.config.args.csv_output
+        metadata.add_asset(metadata.StringIOAsset(sio, csvfname))
         table.emit()
 
 
