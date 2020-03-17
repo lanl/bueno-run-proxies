@@ -371,10 +371,10 @@ class Experiment:
         logger.emlog('# Starting Runs...')
 
         for app in apps:
+            if not Benchmark.recognized(app):
+                logger.emlog(F'# SKIPPING UNRECOGNIZED BENCHMARK: {app}')
+                continue
             for numpe in numpes:
-                if not Benchmark.recognized(app):
-                    logger.emlog(F'# SKIPPING UNRECOGNIZED BENCHMARK: {app}')
-                    continue
                 logger.log('')
                 container.prun(
                     # TODO(skg) Make -n an option.
