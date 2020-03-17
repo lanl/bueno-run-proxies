@@ -11,12 +11,15 @@ from bueno.public import experiment
 from bueno.public import logger
 from bueno.public import metadata
 from bueno.public import utils
+# TODO(skg) Add arithmetic expression widget to generate number lists from
+# input.
 
 from collections import defaultdict
 
 import csv
 import os
 import re
+
 
 # TODO(skg) Make a verify function.
 def build_parser(bname, numpe):
@@ -41,6 +44,7 @@ class DataNamer:
         kid = self.datai[name_prefix]
         self.datai[name_prefix] += 1
         return F'{name_prefix}-runid:{kid}'
+
 
 class BenchmarkOutputParser:
     def __init__(self, name):
