@@ -14,6 +14,8 @@ from bueno.public import utils
 # TODO(skg) Add arithmetic expression widget to generate number lists from
 # input.
 
+# TODO(skg) Update CSV to include benchmark properties like numt, et al.
+
 from collections import defaultdict
 
 import csv
@@ -40,6 +42,8 @@ class Benchmark:
 
     @staticmethod
     def default_list():
+        # TODO(skg) Remove.
+        return 'IMB-EXT'
         # Disabled by default.
         dbd = ['IMB-IO', 'IMB-NBC']
         return ','.join([x for x in Benchmark.available() if x not in dbd])
@@ -131,9 +135,20 @@ class BenchmarkOutputParser:
         return (numpe, numt)
 
     def _window_size_parse(self):
-        if self.line().startswith('#-'):
-            # Eat the next line, No window size for this one.
-            self.eatl()
+        def bail():
+            if self.line().startswith('#-'):
+                # Eat the next line, No window size for this one.
+                self.eatl()
+                return True
+            match = re.search(
+                r'# \( *[0-9]+ additional processes waiting in MPI_Barrier\)',
+                self.line()
+            )
+            if match is not None:
+                # Eat the line. We are dealing with a waiting line.
+                self.eatl()
+                return True
+        if bail():
             return None
         line = self.nextl()
         match = re.search('# window_size = ' + r'(?P<winsize>[0-9]+)', line)
@@ -364,7 +379,7 @@ class Experiment:
 
     def run(self):
         # TODO(skg) Auto-generate.
-        numpes = [1, 2]
+        numpes = [4]
         # Generate list of apps for the given benchmarks.
         apps = [b.strip() for b in self.config.args.benchmarks.split(',')]
 
@@ -413,3 +428,5 @@ class Program:
 
 def main(argv):
     Program(argv).run()
+
+# vim: ft=python ts=4 sts=4 sw=4 expandtab

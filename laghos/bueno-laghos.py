@@ -219,3 +219,5 @@ class Laghos:
 
 def main(argv):
     Laghos(argv).run()
+
+# vim: ft=python ts=4 sts=4 sw=4 expandtab
