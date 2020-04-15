@@ -43,7 +43,7 @@ class Benchmark:
     @staticmethod
     def default_list():
         # TODO(skg) Remove.
-        return 'IMB-MPI1'
+        return 'IMB-EXT, IMB-MPI1'
         # Disabled by default.
         dbd = ['IMB-IO', 'IMB-NBC']
         return ','.join([x for x in Benchmark.available() if x not in dbd])
@@ -237,6 +237,18 @@ class BenchmarkDatum:
         table = utils.Table()
         sio = io.StringIO(newline=None)
         dataw = csv.writer(sio)
+
+        metad = [('numt', self.numt),
+                 ('window_size', self.window_size),
+                 ('mode', self.mode)]
+
+        # Write metadata header to csv file. Is this the best way to do this?
+        for ti in metad:
+            key = ti[0]
+            val = ti[1]
+            if not val:
+                continue
+            dataw.writerow([F'##{key}', val])
 
         dataw.writerow(self.metrics)
         table.addrow(self.metrics, withrule=True)
