@@ -43,7 +43,7 @@ class Benchmark:
     @staticmethod
     def default_list():
         # TODO(skg) Remove.
-        return 'IMB-EXT'
+        return 'IMB-MPI1'
         # Disabled by default.
         dbd = ['IMB-IO', 'IMB-NBC']
         return ','.join([x for x in Benchmark.available() if x not in dbd])
@@ -136,19 +136,20 @@ class BenchmarkOutputParser:
 
     def _window_size_parse(self):
         def bail():
-            if self.line().startswith('#-'):
-                # Eat the next line, No window size for this one.
-                self.eatl()
+            line = self.line()
+            if line.startswith('#-'):
                 return True
-            match = re.search(
+            match = re.match(
                 r'# \( *[0-9]+ additional processes waiting in MPI_Barrier\)',
-                self.line()
+                line
             )
-            if match is not None:
+            if match:
                 # Eat the line. We are dealing with a waiting line.
                 self.eatl()
                 return True
+            return False
         if bail():
+            self.eatl()
             return None
         line = self.nextl()
         match = re.search('# window_size = ' + r'(?P<winsize>[0-9]+)', line)
@@ -161,19 +162,15 @@ class BenchmarkOutputParser:
 
     def _mode_parse(self):
         line = self.nextl()
-        if line is None:
-            raise RuntimeError(F"Expected text, but got None.")
-        # There is a chance this is a mode block.
-        match = None
-        if not line.startswith('#'):
+        match = re.match(r'^#$', line)
+        if match is None:
             self.rewindl(1)
             return None
-        else:
-            line = self.nextl()
-            match = re.search('#    MODE: ' + r'(?P<mode>[A-Z-]+)', line)
-            if match is None:
-                self.rewindl(2)
-                return None
+        # There is a chance this is a mode block.
+        match = re.search('#    MODE: ' + r'(?P<mode>[A-Z-]+)', self.nextl())
+        if match is None:
+            self.rewindl(2)
+            return None
         # Eat the next line.
         self.eatl()
         return match.group('mode')
