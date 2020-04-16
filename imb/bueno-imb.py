@@ -33,8 +33,7 @@ class Benchmark:
                 'IMB-EXT',
                 'IMB-RMA',
                 'IMB-IO',
-                'IMB-NBC'
-                ]
+                'IMB-NBC']
 
     @staticmethod
     def recognized(name):
@@ -115,7 +114,7 @@ class BenchmarkOutputParser:
             numt = match.group('numt')
             # numt not specified, so default to 1.
             if numt is None:
-                return 1
+                return None
             return int(numt)
 
         line = self.nextl()
@@ -187,7 +186,7 @@ class BenchmarkOutputParser:
             line = self.nextl()
             res.append(line.strip().split())
         if len(res) == 0:
-            raise RuntimeError('Expected run statistics, but found zero.')
+            raise RuntimeError('Expected run statistics, but found none.')
         return res
 
     def parse(self, lines):
@@ -388,7 +387,7 @@ class Experiment:
 
     def run(self):
         # TODO(skg) Auto-generate.
-        numpes = [4]
+        numpes = [1, 2, 4]
         # Generate list of apps for the given benchmarks.
         apps = [b.strip() for b in self.config.args.benchmarks.split(',')]
 
