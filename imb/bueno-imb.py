@@ -14,8 +14,6 @@ from bueno.public import utils
 # TODO(skg) Add arithmetic expression widget to generate number lists from
 # input.
 
-# TODO(skg) Update CSV to include benchmark properties like numt, et al.
-
 from collections import defaultdict
 
 import csv
@@ -42,7 +40,7 @@ class Benchmark:
     @staticmethod
     def default_list():
         # TODO(skg) Remove.
-        return 'IMB-EXT, IMB-MPI1'
+        # return 'IMB-EXT, IMB-MPI1'
         # Disabled by default.
         dbd = ['IMB-IO', 'IMB-NBC']
         return ','.join([x for x in Benchmark.available() if x not in dbd])
@@ -257,7 +255,12 @@ class BenchmarkDatum:
         table.emit()
         logger.log('\n')
 
-        csvfname = F'{self.name}.csv'
+        csvfname = F'{self.name}'
+        csvfname += F'-{self.numpe}PE'
+        if self.mode is not None:
+            csvfname += F'-{self.mode.lower()}'
+        csvfname += '.csv'
+
         opath = os.path.join(
             label.name,
             F'numpe-{label.numpe}',
