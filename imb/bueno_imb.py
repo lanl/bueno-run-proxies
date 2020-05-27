@@ -6,20 +6,22 @@
 # top-level directory of this distribution for more information.
 #
 
-from bueno.public import container
-from bueno.public import experiment
-from bueno.public import logger
-from bueno.public import metadata
-from bueno.public import utils
-# TODO(skg) Add arithmetic expression widget to generate number lists from
-# input.
-
-from collections import defaultdict
+'''
+bueno run script for the IMB suite.
+'''
 
 import csv
 import io
 import os
 import re
+
+from collections import defaultdict
+
+from bueno.public import container
+from bueno.public import experiment
+from bueno.public import logger
+from bueno.public import metadata
+from bueno.public import utils
 
 
 class Benchmark:
@@ -240,9 +242,9 @@ class BenchmarkDatum:
                  ('mode', self.mode)]
 
         # Write metadata header to csv file. Is this the best way to do this?
-        for ti in metad:
-            key = ti[0]
-            val = ti[1]
+        for coll in metad:
+            key = coll[0]
+            val = coll[1]
             if not val:
                 continue
             dataw.writerow([F'##{key}', val])
@@ -278,16 +280,11 @@ class BenchmarkData:
         self.data.append(bmdatum)
 
     def tabulate(self):
-        for d in self.data:
-            d.tabulate(self.label)
+        for datum in self.data:
+            datum.tabulate(self.label)
 
 
 class Configuration(experiment.CLIConfiguration):
-    def __init__(self, desc, argv):
-        super().__init__(desc, argv)
-        # Get the generate specification and process any arguments provided. Do
-        # this as early as possible to see an up-to-date version of the config.
-        # self.genspec = experiment.readgs(self.args.input, self)
 
     def addargs(self):
         self.argparser.add_argument(

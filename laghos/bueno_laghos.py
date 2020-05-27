@@ -6,15 +6,19 @@
 # top-level directory of this distribution for more information.
 #
 
+'''
+bueno run script for the Laghos miniapp.
+'''
+
+import csv
+import io
+import re
+
 from bueno.public import container
 from bueno.public import experiment
 from bueno.public import logger
 from bueno.public import metadata
 from bueno.public import utils
-
-import csv
-import io
-import re
 
 
 class Configuration(experiment.CLIConfiguration):
@@ -52,8 +56,6 @@ class Configuration(experiment.CLIConfiguration):
             default=Configuration.Defaults.executable
         )
 
-        # TODO(skg) Document how relative paths work in bueno run scripts. Note
-        # that paths are relative to the run script.
         self.argparser.add_argument(
             '-i', '--input',
             type=str,
@@ -72,7 +74,7 @@ class Configuration(experiment.CLIConfiguration):
         )
 
         # Add pre-canned options to deal with experiment.runcmds() input.
-        rcopts = experiment.cli_args_add_runcmds_options(
+        experiment.cli_args_add_runcmds_options(
             self,
             opt_required=False,
             opt_default=Configuration.Defaults.rcmds
@@ -123,16 +125,16 @@ class Experiment:
 
         numpe_match = re.search(r'\s+-n\s?(?P<numpe>[0-9]+)', cmd)
         if numpe_match is None:
-            es = F"Cannot determine numpe from:'{cmd}'"
-            raise ValueError(es)
+            estr = F"Cannot determine numpe from:'{cmd}'"
+            raise ValueError(estr)
         numpe = int(numpe_match.group('numpe'))
         self.data['numpe'].append(numpe)
 
         self._parsenstore(kwargs.pop('output'))
 
     def _parsenstore(self, outl):
-        def parsel(l):
-            return float(l.split(':')[1])
+        def parsel(line):
+            return float(line.split(':')[1])
 
         lines = [x.rstrip() for x in outl]
         for line in lines:
@@ -177,8 +179,8 @@ class Experiment:
         dataw = csv.writer(sio)
         dataw.writerow(header)
         table.addrow(header, withrule=True)
-        for numpe, t, cgh1, cgl2 in data:
-            row = [numpe, t, cgh1, cgl2]
+        for numpe, tott, cgh1, cgl2 in data:
+            row = [numpe, tott, cgh1, cgl2]
             dataw.writerow(row)
             table.addrow(row)
 
