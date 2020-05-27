@@ -22,14 +22,13 @@ class Configuration(experiment.CLIConfiguration):
         super().__init__(desc, argv)
         # Get the generate specification and process any arguments provided. Do
         # this as early as possible to see an up-to-date version of the config.
-        # TODO(skg) Provide a way to specify the run parameters as an argument.
-        # Something like: --prun-args '-n {{}} -N {{}}'
         self.genspec = experiment.readgs(self.args.input, self)
 
     def addargs(self):
         self.argparser.add_argument(
             '--csv-output',
             type=str,
+            metavar='CSV_NAME',
             help='Names the generated CSV file produced by a run.',
             required=False,
             default=Configuration.Defaults.csv_output
@@ -38,6 +37,7 @@ class Configuration(experiment.CLIConfiguration):
         self.argparser.add_argument(
             '-d', '--description',
             type=str,
+            metavar='DESC',
             help='Describes the experiment.',
             required=False,
             default=Configuration.Defaults.description
@@ -46,6 +46,7 @@ class Configuration(experiment.CLIConfiguration):
         self.argparser.add_argument(
             '--executable',
             type=str,
+            metavar='EXEC',
             help="Specifies the executable's path.",
             required=False,
             default=Configuration.Defaults.executable
@@ -56,6 +57,7 @@ class Configuration(experiment.CLIConfiguration):
         self.argparser.add_argument(
             '-i', '--input',
             type=str,
+            metavar='INP',
             help='Specifies the path to an experiment input.',
             required=False,
             default=Configuration.Defaults.input
@@ -69,20 +71,11 @@ class Configuration(experiment.CLIConfiguration):
             default=Configuration.Defaults.experiment_name
         )
 
-        self.argparser.add_argument(
-            '--ppn',
-            type=int,
-            help='Specifies the number of processors per node.',
-            required=False,
-            default=Configuration.Defaults.ppn
-        )
-
-        self.argparser.add_argument(
-            '--prun',
-            type=str,
-            help='Specifies the parallel launcher to use.',
-            required=False,
-            default=Configuration.Defaults.prun
+        # Add pre-canned options to deal with experiment.runcmds() input.
+        rcopts = experiment.cli_args_add_runcmds_options(
+            self,
+            opt_required=False,
+            opt_default=Configuration.Defaults.rcmds
         )
 
     class Defaults:
@@ -91,9 +84,7 @@ class Configuration(experiment.CLIConfiguration):
         executable = '/laghos/Laghos/laghos'
         input = 'experiments/quick-sedov-blast2D'
         experiment_name = 'laghos'
-        # TODO(skg)
-        ppn = None
-        prun = 'mpiexec'
+        rcmds = (0, 2, 'srun -n %n', 'nidx + 1')
 
 
 class Experiment:
@@ -130,11 +121,7 @@ class Experiment:
         self.data['commands'].append(cmd)
         self.data['tottime'].append(tet)
 
-        numpe_match = re.search(
-            # TODO(skg) Get -n from cmd matrix.
-            self.config.args.prun + r' -n (?P<numpe>[0-9]+)',
-            cmd
-        )
+        numpe_match = re.search(r'\s+-n\s?(?P<numpe>[0-9]+)', cmd)
         if numpe_match is None:
             es = F"Cannot determine numpe from:'{cmd}'"
             raise ValueError(es)
@@ -157,22 +144,16 @@ class Experiment:
                 continue
 
     def run(self):
-        # TODO(skg): Add support for multiple specs in an input file.
         # Generate the run commands for the given experiment.
-        runcmds = experiment.generate(
-            self.config.genspec.format(
-                self.config.args.prun,
-                self.config.args.executable
-            ),
-            # TODO(skg) Add argument that allows generation of this.
-            [2]
-        )
+        rcmd = self.config.args.runcmds
+        pruns = experiment.runcmds(rcmd[0], rcmd[1], rcmd[2], rcmd[3])
+        # The application and its arguments.
+        appargs = self.config.genspec.format(self.config.args.executable)
 
         logger.emlog('# Starting Runs...')
-
-        for r in runcmds:
+        for prun in pruns:
             logger.log('')
-            container.run(r, postaction=self.post_action)
+            container.prun(prun, appargs, postaction=self.post_action)
 
     def report(self):
         logger.emlog(F'# {experiment.name()} Report')
