@@ -41,8 +41,6 @@ class Benchmark:
 
     @staticmethod
     def default_list():
-        # TODO(skg) Remove.
-        # return 'IMB-EXT, IMB-MPI1'
         # Disabled by default.
         dbd = ['IMB-IO', 'IMB-NBC']
         return ','.join([x for x in Benchmark.available() if x not in dbd])
@@ -290,6 +288,7 @@ class Configuration(experiment.CLIConfiguration):
         self.argparser.add_argument(
             '--benchmarks',
             type=str,
+            metavar='B1,B2,...',
             help='Comma-delimited list of IMB benchmarks to run.'
                  ' (default: %(default)s)'
                  F" (choices: {','.join(Benchmark.available())})",
@@ -300,6 +299,7 @@ class Configuration(experiment.CLIConfiguration):
         self.argparser.add_argument(
             '--bin-dir',
             type=str,
+            metavar='DIR',
             help='Specifies the base directory of the IMB binaries.'
                  ' (default: %(default)s)',
             required=False,
@@ -309,6 +309,7 @@ class Configuration(experiment.CLIConfiguration):
         self.argparser.add_argument(
             '-d', '--description',
             type=str,
+            metavar='DESC',
             help='Describes the experiment.'
                  ' (default: %(default)s)',
             required=False,
@@ -323,22 +324,11 @@ class Configuration(experiment.CLIConfiguration):
             required=False,
             default=Configuration.Defaults.experiment_name
         )
-
-        self.argparser.add_argument(
-            '--ppn',
-            type=int,
-            help='Specifies the number of processors per node.',
-            required=False,
-            default=Configuration.Defaults.ppn
-        )
-
-        self.argparser.add_argument(
-            '--prun',
-            type=str,
-            help='Specifies the parallel launcher to use.'
-                 ' (default: %(default)s)',
-            required=False,
-            default=Configuration.Defaults.prun
+        # Add pre-canned options to deal with experiment.runcmds() input.
+        experiment.cli_args_add_runcmds_options(
+            self,
+            opt_required=False,
+            opt_default=Configuration.Defaults.rcmds
         )
 
     class Defaults:
@@ -346,9 +336,7 @@ class Configuration(experiment.CLIConfiguration):
         bin_dir = '/IMB'
         description = 'Intel MPI Benchmarks'
         experiment_name = 'imb'
-        # TODO(skg)
-        ppn = None
-        prun = 'srun'
+        rcmds = (0, 2, 'srun -n %n', 'nidx + 1')
 
 
 class Experiment:
@@ -386,25 +374,29 @@ class Experiment:
         self.data['bmdata'].append(parser.data())
 
     def run(self):
-        # TODO(skg) Auto-generate.
-        numpes = [1, 2, 4]
+        def _get_numpe(prun):
+            numpe_match = re.search(r'\s+-n\s?(?P<numpe>[0-9]+)', prun)
+            if numpe_match is None:
+                estr = F"Cannot determine numpe from:'{prun}'"
+                raise ValueError(estr)
+            return int(numpe_match.group('numpe'))
+        # Generate the run commands for the given experiment.
+        rcmd = self.config.args.runcmds
+        pruns = experiment.runcmds(rcmd[0], rcmd[1], rcmd[2], rcmd[3])
         # Generate list of apps for the given benchmarks.
         apps = [b.strip() for b in self.config.args.benchmarks.split(',')]
-
         logger.emlog('# Starting Runs...')
-
         for app in apps:
             if not Benchmark.recognized(app):
                 logger.emlog(F'# SKIPPING UNRECOGNIZED BENCHMARK: {app}')
                 continue
-            for numpe in numpes:
+            for prun in pruns:
                 logger.log('')
                 container.prun(
-                    # TODO(skg) Make -n an option.
-                    F'{self.config.args.prun} -n {numpe}',
+                    F'{prun}',
                     os.path.join(self.config.args.bin_dir, app),
                     postaction=self.post_action,
-                    user_data={'app': app, 'numpe': numpe}
+                    user_data={'app': app, 'numpe': _get_numpe(prun)}
                 )
 
     def report(self):
