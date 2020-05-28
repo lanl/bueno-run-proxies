@@ -283,6 +283,11 @@ class BenchmarkData:
 
 
 class Configuration(experiment.CLIConfiguration):
+    def __init__(self, desc, argv):
+        super().__init__(desc, argv)
+        # Get the generate specification and process any arguments provided. Do
+        # this as early as possible to see an up-to-date version of the config.
+        self.genspec = experiment.readgs(self.args.input, self)
 
     def addargs(self):
         self.argparser.add_argument(
@@ -314,6 +319,14 @@ class Configuration(experiment.CLIConfiguration):
                  ' (default: %(default)s)',
             required=False,
             default=Configuration.Defaults.description
+        )
+
+        self.argparser.add_argument(
+            '-i', '--input',
+            type=str,
+            metavar='INP',
+            help='Specifies the path to an experiment input.',
+            required=False
         )
 
         self.argparser.add_argument(
@@ -354,6 +367,11 @@ class Experiment:
         }
         # Emit program configuration to terminal.
         self.emit_conf()
+        # Add assets to collection of metadata.
+        self.add_assets()
+
+    def add_assets(self):
+        metadata.add_asset(metadata.FileAsset(self.config.args.input))
 
     def emit_conf(self):
         pcd = dict()
