@@ -137,7 +137,8 @@ class BenchmarkOutputParser:
             if line.startswith('#-'):
                 return True
             match = re.match(
-                r'# \( *[0-9]+ additional processes waiting in MPI_Barrier\)',
+                r'# \(\s*[0-9]+ additional process(?:es)? '
+                r'waiting in MPI_Barrier\)',
                 line
             )
             if match:
@@ -285,9 +286,10 @@ class BenchmarkData:
 class Configuration(experiment.CLIConfiguration):
     def __init__(self, desc, argv):
         super().__init__(desc, argv)
-        # Get the generate specification and process any arguments provided. Do
-        # this as early as possible to see an up-to-date version of the config.
-        self.genspec = experiment.readgs(self.args.input, self)
+        # Get and process any arguments provided. Do this as early as possible
+        # to see an up-to-date version of the config.
+        if not utils.emptystr(self.args.input):
+            experiment.readgs(self.args.input, self)
 
     def addargs(self):
         self.argparser.add_argument(
@@ -371,7 +373,8 @@ class Experiment:
         self.add_assets()
 
     def add_assets(self):
-        metadata.add_asset(metadata.FileAsset(self.config.args.input))
+        if not utils.emptystr(self.config.args.input):
+            metadata.add_asset(metadata.FileAsset(self.config.args.input))
 
     def emit_conf(self):
         pcd = dict()
