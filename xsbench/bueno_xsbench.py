@@ -132,7 +132,7 @@ class Experiment:
 
     def _parsenstore(self, outl):
         def parsei(line):
-            return int(line.split(':')[1].strip().replace(',',''))
+            return int(line.split(':')[1].strip().replace(',', ''))
 
         lines = [x.rstrip() for x in outl]
         for line in lines:
