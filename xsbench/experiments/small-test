@@ -1,0 +1,3 @@
+# --name xsbench-small-test
+# --runcmds "0, 2, 'srun -n %n', 'nidx + 1'"
+{} -s small -t 1
