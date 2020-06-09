@@ -74,7 +74,7 @@ class Configuration(experiment.CLIConfiguration):
         )
 
         # Add pre-canned options to deal with experiment.runcmds() input.
-        experiment.cli_args_add_runcmds_options(
+        experiment.cli_args_add_runcmds_option(
             self,
             opt_required=False,
             opt_default=Configuration.Defaults.rcmds
