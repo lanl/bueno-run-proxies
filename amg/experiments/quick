@@ -1,0 +1,5 @@
+# A quick AMG test input.
+# --description 'Quick AMG Test'
+# --csv-output amg-quick.csv
+# --runcmds "0, 3, 'srun -n %n', 'nidx + 1'"
+{}
