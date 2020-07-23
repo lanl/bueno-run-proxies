@@ -3,3 +3,7 @@
 # --csv-output amg-quick.csv
 # --runcmds "0, 3, 'srun -n %n', 'nidx + 1'"
 {}
+# --description 'Quick AMG Test 2'
+# --csv-output amg-quick2.csv
+# --runcmds "0, 3, 'srun -n %n', 'nidx + 1'"
+{} -problem 2

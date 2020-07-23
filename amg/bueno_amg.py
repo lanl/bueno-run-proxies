@@ -21,74 +21,6 @@ from bueno.public import metadata
 from bueno.public import utils
 
 
-class Configuration(experiment.CLIConfiguration):
-    def __init__(self, desc, argv):
-        super().__init__(desc, argv)
-        # Get the generate specification and process any arguments provided. Do
-        # this as early as possible to see an up-to-date version of the config.
-        self.genspec = experiment.readgs(self.args.input, self)
-
-    def addargs(self):
-        self.argparser.add_argument(
-            '--csv-output',
-            type=str,
-            metavar='CSV_NAME',
-            help='Names the generated CSV file produced by a run.',
-            required=False,
-            default=Configuration.Defaults.csv_output
-        )
-
-        self.argparser.add_argument(
-            '-d', '--description',
-            type=str,
-            metavar='DESC',
-            help='Describes the experiment.',
-            required=False,
-            default=Configuration.Defaults.description
-        )
-
-        self.argparser.add_argument(
-            '--executable',
-            type=str,
-            metavar='EXEC',
-            help="Specifies the executable's path.",
-            required=False,
-            default=Configuration.Defaults.executable
-        )
-
-        self.argparser.add_argument(
-            '-i', '--input',
-            type=str,
-            metavar='INP',
-            help='Specifies the path to an experiment input.',
-            required=False,
-            default=Configuration.Defaults.input
-        )
-
-        self.argparser.add_argument(
-            '--name',
-            type=str,
-            help='Names the experiment.',
-            required=False,
-            default=Configuration.Defaults.experiment_name
-        )
-
-        # Add pre-canned options to deal with experiment.runcmds() input.
-        experiment.cli_args_add_runcmds_option(
-            self,
-            opt_required=False,
-            opt_default=Configuration.Defaults.rcmds
-        )
-
-    class Defaults:
-        csv_output = 'data.csv'
-        description = experiment.name()
-        executable = '/AMG/test/amg'
-        input = 'experiments/quick'
-        experiment_name = 'AMG'
-        rcmds = (0, 2, 'srun -n %n', 'nidx + 1')
-
-
 class Experiment:
     def __init__(self, config):
         # The experiment configuration.
@@ -167,14 +99,14 @@ class Experiment:
                 self.data['fom'].append(parsel(line))
                 continue
 
-    def run(self):
+    def run(self, genspec):
+        logger.emlog('# Starting Runs...')
         # Generate the run commands for the given experiment.
         rcmd = self.config.args.runcmds
         pruns = experiment.runcmds(rcmd[0], rcmd[1], rcmd[2], rcmd[3])
         # The application and its arguments.
-        appargs = self.config.genspec.format(self.config.args.executable)
-
-        logger.emlog('# Starting Runs...')
+        executable = self.config.args.executable
+        appargs = genspec.format(executable)
         for prun in pruns:
             logger.log('')
             container.prun(prun, appargs, postaction=self.post_action)
@@ -203,6 +135,7 @@ class Experiment:
         table = utils.Table()
         sio = io.StringIO(newline=None)
         dataw = csv.writer(sio)
+        dataw.writerow([F'## {self.config.args.description}'])
         dataw.writerow(header)
         table.addrow(header, withrule=True)
         for solid, numpe, tott, nxyz, pxyz, fom in data:
@@ -213,20 +146,26 @@ class Experiment:
         csvfname = self.config.args.csv_output
         metadata.add_asset(metadata.StringIOAsset(sio, csvfname))
         table.emit()
-
-
-class Program:
-    def __init__(self, argv):
-        self.desc = 'bueno run script for AMG experiments.'
-        # Experiment configuration, data, and analysis.
-        self.experiment = Experiment(Configuration(self.desc, argv))
-
-    def run(self):
-        self.experiment.run()
-        self.experiment.report()
+        logger.log('')
 
 
 def main(argv):
-    Program(argv).run()
+    # Program description
+    desc = 'bueno run script for Laghos experiments.'
+    # Default values
+    defaults = experiment.CannedCLIConfiguration.Defaults
+    defaults.csv_output = 'data.csv'
+    defaults.description = experiment.name()
+    defaults.executable = '/AMG/test/amg'
+    defaults.input = 'experiments/quick'
+    defaults.name = 'AMG'
+    defaults.runcmds = (0, 2, 'srun -n %n', 'nidx + 1')
+    # Initial configuration
+    config = experiment.CannedCLIConfiguration(desc, argv, defaults)
+    for genspec in experiment.readgs(config.args.input, config):
+        # Note that config is updated by readgs after each iteration.
+        exprmnt = Experiment(config)
+        exprmnt.run(genspec)
+        exprmnt.report()
 
 # vim: ft=python ts=4 sts=4 sw=4 expandtab
