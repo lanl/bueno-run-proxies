@@ -332,7 +332,7 @@ class Configuration(experiment.CLIConfiguration):
         )
 
         self.argparser.add_argument(
-            '--name',
+            '-n', '--name',
             type=str,
             help='Names the experiment.'
                  ' (default: %(default)s)',
