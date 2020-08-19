@@ -162,6 +162,8 @@ def main(argv):
     defaults.runcmds = (0, 2, 'srun -n %n', 'nidx + 1')
     # Initial configuration
     config = experiment.CannedCLIConfiguration(desc, argv, defaults)
+    # Parse provided arguments
+    config.parseargs()
     for genspec in experiment.readgs(config.args.input, config):
         # Note that config is updated by readgs after each iteration.
         exprmnt = Experiment(config)

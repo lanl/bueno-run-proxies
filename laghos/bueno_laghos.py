@@ -12,13 +12,45 @@ bueno run script for the Laghos miniapp.
 
 import csv
 import io
+import os
 import re
 
 from bueno.public import container
 from bueno.public import experiment
+from bueno.public import host
 from bueno.public import logger
 from bueno.public import metadata
 from bueno.public import utils
+
+# Import extras
+try:
+    import icaptdb
+except ImportError:
+    pass
+else:
+    metadata.add_asset(metadata.PythonModuleAsset(icaptdb))
+
+
+class FOM:
+    def __init__(self, name, description, units, value):
+        self.name = name
+        self.description = description
+        self.units = units
+        self.value = value
+
+
+class FOMFactory:
+    @staticmethod
+    def build(name, value):
+        if name == 'cgh1':
+            desc = 'CG (H1) total time'
+            units = 's'
+            return FOM(name, desc, units, value)
+        if name == 'cgl2':
+            desc = 'CG (L2) total time'
+            units = 's'
+            return FOM(name, desc, units, value)
+        return None
 
 
 class Experiment:
@@ -29,8 +61,10 @@ class Experiment:
         experiment.name(self.config.args.name)
         # Data container.
         self.data = {
-            'commands': list(),
+            'command': list(),
             'numpe': list(),
+            'nthread': list(),
+            'starttime': list(),
             'tottime': list(),
             'cgh1': list(),
             'cgl2': list()
@@ -51,8 +85,10 @@ class Experiment:
     def post_action(self, **kwargs):
         cmd = kwargs.pop('command')
         tet = kwargs.pop('exectime')
+        stm = kwargs.pop('start_time')
 
-        self.data['commands'].append(cmd)
+        self.data['command'].append(cmd)
+        self.data['starttime'].append(stm)
         self.data['tottime'].append(tet)
 
         numpe_match = re.search(r'\s+-n\s?(?P<numpe>[0-9]+)', cmd)
@@ -61,6 +97,8 @@ class Experiment:
             raise ValueError(estr)
         numpe = int(numpe_match.group('numpe'))
         self.data['numpe'].append(numpe)
+        # We currently support only single-threaded runs.
+        self.data['nthread'].append(1)
 
         self._parsenstore(kwargs.pop('output'))
 
@@ -100,11 +138,18 @@ class Experiment:
         ]
 
         data = zip(
+            self.data['command'],
+            self.data['starttime'],
             self.data['numpe'],
+            self.data['nthread'],
             self.data['tottime'],
             self.data['cgh1'],
             self.data['cgl2']
         )
+
+        icapt_rds = None
+        if utils.module_imported('icaptdb'):
+            icapt_rds = icaptdb.RunDataStore(self.config.args)
 
         table = utils.Table()
         sio = io.StringIO(newline=None)
@@ -112,10 +157,20 @@ class Experiment:
         dataw.writerow([F'## {self.config.args.description}'])
         dataw.writerow(header)
         table.addrow(header, withrule=True)
-        for numpe, tott, cgh1, cgl2 in data:
+        for cmd, stime, numpe, nthread, tott, cgh1, cgl2 in data:
             row = [numpe, tott, cgh1, cgl2]
             dataw.writerow(row)
             table.addrow(row)
+            if icapt_rds is not None:
+                icapt_rds.add(
+                    stime.strftime('%a %b %d %H:%M:%S %Y'),
+                    tott,
+                    numpe,
+                    nthread,
+                    cmd,
+                    (FOMFactory.build('cgh1', cgh1),
+                     FOMFactory.build('cgl2', cgl2))
+                )
 
         csvfname = self.config.args.csv_output
         metadata.add_asset(metadata.StringIOAsset(sio, csvfname))
@@ -136,6 +191,11 @@ def main(argv):
     defaults.runcmds = (0, 2, 'srun -n %n', 'nidx + 1')
     # Initial configuration
     config = experiment.CannedCLIConfiguration(desc, argv, defaults)
+    # Update configuration to include extra arguments
+    if utils.module_imported('icaptdb'):
+        config.addargs(icaptdb.AddArgsAction)
+    # Parse provided arguments
+    config.parseargs()
     for genspec in experiment.readgs(config.args.input, config):
         # Note that config is updated by readgs after each iteration.
         exprmnt = Experiment(config)
