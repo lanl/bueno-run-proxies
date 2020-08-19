@@ -31,25 +31,17 @@ else:
     metadata.add_asset(metadata.PythonModuleAsset(icaptdb))
 
 
-class FOM:
-    def __init__(self, name, description, units, value):
-        self.name = name
-        self.description = description
-        self.units = units
-        self.value = value
-
-
 class FOMFactory:
     @staticmethod
     def build(name, value):
         if name == 'cgh1':
             desc = 'CG (H1) total time'
             units = 's'
-            return FOM(name, desc, units, value)
+            return experiment.FOM(name, desc, units, value)
         if name == 'cgl2':
             desc = 'CG (L2) total time'
             units = 's'
-            return FOM(name, desc, units, value)
+            return experiment.FOM(name, desc, units, value)
         return None
 
 
