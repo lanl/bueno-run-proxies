@@ -158,8 +158,8 @@ class Experiment:
                     numpe,
                     nthread,
                     cmd,
-                    (FOMFactory.build('cgh1', cgh1),
-                     FOMFactory.build('cgl2', cgl2))
+                    [FOMFactory.build('cgh1', cgh1),
+                     FOMFactory.build('cgl2', cgl2)]
                 )
 
         csvfname = self.config.args.csv_output
