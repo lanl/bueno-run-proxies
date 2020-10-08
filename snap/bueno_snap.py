@@ -1,4 +1,4 @@
-# 
+#
 # Written by Jacob Dickens, 2020
 #
 # This file is part of the bueno project. See the LICENSE file at the
@@ -12,16 +12,9 @@ bueno run script for the SN Application Proxy (SNAP).
 import re
 
 from bueno.public import container
-from bueno.public import experiment
 from bueno.public import logger
 from bueno.public import metadata
-from bueno.public import utils
 
-
-# SNAP path variables.
-GSNAP = '~/SNAP_build/src/gsnap'
-S_IN = './experiments/input'
-S_OUT = './experiments/output'
 
 # SNAP output file variables.
 SO_OFFSET = 5
@@ -33,49 +26,22 @@ class Experiment:
         '''
         Experiment configuration.
         '''
-        self.config = config
-        experiment.name(self.config.args.name)
-        self.data = {
-            'command': list(),
-            'starttime': list(),
-            'tottime': list()
-        }
-        self.emit_conf()
-        self.add_assets()
-
-    def emit_conf(self):
-        '''
-        Emit program configuration to terminal.
-        '''
-        pcd = dict()
-        pcd['Program'] = vars(self.config.args)
-        utils.yamlp(pcd, 'Program')
-
-    def add_assets(self):
-        '''
-        Add assets to metadata collection
-        '''
-        metadata.add_asset(metadata.FileAsset(self.config.args.input))
+        self.name = config['name']
+        self.description = config['description']
+        self.executable = config['executable']
+        self.snap_input = config['input']
+        self.snap_output = config['output']
 
     def post_action(self, **kwargs) -> None:
         '''
         Custom post action: metadata collection
         '''
-        logger.emlog('POST-ACTION')
-
-        cmd = kwargs.pop('command')
-        tet = kwargs.pop('exectime')
-        stm = kwargs.pop('start_time')
-
-        self.data['command'].append(cmd)
-        self.data['starttime'].append(stm)
-        self.data['tottime'].append(tet)
-
-        logger.log('retriev SNAP output...')
+        logger.emlog('# POST-ACTION')
+        logger.log('Retrieving SNAP output...')
         self.parse_snapfile()
 
     def parse_snapfile(self):
-        with open(S_OUT) as out_file:
+        with open(self.snap_output) as out_file:
             lines = out_file.readlines()
             table_pos = -1  # time table position
 
@@ -114,18 +80,29 @@ class Experiment:
             return
 
     def run(self, genspec):
+        snap_exec = genspec['executable']
+        infile = genspec['input']
+        outfile = genspec['output']
+
         container.run(
-            F'mpiexec -n 4 {GSNAP} {S_IN} {S_OUT}',
+            F'mpiexec -n 4 {snap_exec} {infile} {outfile}',
             preaction=None,
             postaction=self.post_action
         )
 
+
 def main(argv) -> None:
     # Program description
     desc = 'bueno run script for SNAP experiments.'
-    # Default values
-    defaults = experiment.CannedCLIConfiguration.Defaults
-    defaults.description = experiment.name()
 
-    experiment.name('snap-test')
-    
+    # Default values
+    defaults = dict()
+    defaults['name'] = 'SNAP'
+    defaults['description'] = desc
+    defaults['executable'] = '~/SNAP_build/src/gsnap'
+    defaults['input'] = './experiments/input'
+    defaults['output'] = './experiments/output'
+
+    # Initial configuration
+    exp = Experiment(defaults)
+    exp.run(defaults)
