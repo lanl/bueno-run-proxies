@@ -10,10 +10,14 @@ bueno run script for the SN Application Proxy (SNAP).
 '''
 
 import re
+import io
+import csv
 
 from bueno.public import container
+from bueno.public import experiment
 from bueno.public import logger
 from bueno.public import metadata
+from bueno.public import utils
 
 
 # SNAP output file variables.
@@ -28,9 +32,20 @@ class Experiment:
         '''
         self.name = config['name']
         self.description = config['description']
-        self.executable = config['executable']
-        self.snap_input = config['input']
-        self.snap_output = config['output']
+
+        exe = config['executable']
+        s_in = config['input']
+        s_out = config['output']
+
+        self.executable = exe
+        self.snap_input = s_in
+        self.snap_output = s_out
+        self.cmd = F'mpiexec -n 4 {exe} {s_in} {s_out}'
+
+        self.csv_output = config['csv']
+        self.data = {
+            'Timing Summary': dict()
+        }
 
     def post_action(self, **kwargs) -> None:
         '''
@@ -69,29 +84,60 @@ class Experiment:
                 logger.log(F'[data] {row}')
                 data.append(row)  # append formatted item
 
-            adict = dict()
-            adict['Timing Summary'] = {}
             for item in data:  # add items to metadata dict
                 label, val = item.split(':')
-                adict['Timing Summary'][label] = val
+                self.data['Timing Summary'][label] = val  # populate metadata file
 
             logger.log('\nAdding metadata file...')
-            metadata.add_asset(metadata.YAMLDictAsset(adict, 'timing-metadata'))
+            metadata.add_asset(metadata.YAMLDictAsset(
+                self.data['Timing Summary'],
+                'timing-metadata'
+            ))
             return
 
-    def run(self, genspec):
-        snap_exec = genspec['executable']
-        infile = genspec['input']
-        outfile = genspec['output']
-
+    def run(self):
         container.run(
-            F'mpiexec -n 4 {snap_exec} {infile} {outfile}',
+            self.cmd,
             preaction=None,
             postaction=self.post_action
         )
 
+    def report(self):
+        logger.emlog(F'# {self. name} Report')
+        logger.log('creating report...')
+
+        table = utils.Table()
+        sio = io.StringIO(newline=None)
+        dataraw = csv.writer(sio)
+        dataraw.writerow([F'## {self.description}'])
+
+        # Generic data.
+        header = ['# EXECUTED:']
+        dataraw.writerow(header)
+        dataraw.writerow([self.cmd])
+        dataraw.writerow([])
+
+        logger.log('# EXECUTED:')
+        logger.log(self.cmd)
+        logger.log('')
+
+        # Time Summary Data.
+        header = ['# TIMING SUMMARY:']
+        dataraw.writerow(header)
+        table.addrow(header)
+        for label in self.data['Timing Summary']:
+            value = self.data['Timing Summary'][label]
+            dataraw.writerow([label, value])
+            table.addrow([label, value])
+
+        csvfname = self.csv_output
+        metadata.add_asset(metadata.StringIOAsset(sio, csvfname))
+        table.emit()
+
 
 def main(argv) -> None:
+    experiment.name('snap-test')
+
     # Program description
     desc = 'bueno run script for SNAP experiments.'
 
@@ -101,8 +147,10 @@ def main(argv) -> None:
     defaults['description'] = desc
     defaults['executable'] = '~/SNAP_build/src/gsnap'
     defaults['input'] = './experiments/input'
-    defaults['output'] = './experiments/output'
+    defaults['output'] = './output'
+    defaults['csv'] = './data.csv'
 
     # Initial configuration
     exp = Experiment(defaults)
-    exp.run(defaults)
+    exp.run()
+    exp.report()
