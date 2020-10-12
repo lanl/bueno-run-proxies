@@ -7,13 +7,12 @@ the SNAP instance, SNAP's input and output file destinations, as well as the
 destination of the bueno csv report file.
 ```Python
 # Default values
-defaults = dict()
-defaults['name'] = 'SNAP'
-defaults['description'] = desc
-defaults['executable'] = '~/SNAP_build/src/gsnap'
-defaults['input'] = './experiments/input'
-defaults['output'] = './output'
-defaults['csv'] = './data.csv'
+defaults = experiment.CannedCLIConfiguration.Defaults
+defaults.csv_output = './data.csv'
+defaults.description = desc
+defaults.executable = '~/SNAP_build/src/gsnap'
+defaults.input = './experiments/input'
+defaults.name = 'snap'
 ```
 
 Additionally, there are some options for acquiring the timing table from the
@@ -36,7 +35,7 @@ time_table = lines[start:end]  # isolate table lines
 ```Shell
 bueno run -a none -p bueno_snap.py 
 ```
-After execution, the metadata files are stored in the local snap-test folder.
+After execution, the metadata files are stored in the new local snap folder.
 The one created by the custom post action is called: "timing-metadata.yaml".
 Additionally, the generated report is saved as: "data.csv" in the same
 directory.

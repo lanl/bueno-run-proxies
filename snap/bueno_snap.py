@@ -30,22 +30,32 @@ class Experiment:
         '''
         Experiment configuration.
         '''
-        self.name = config['name']
-        self.description = config['description']
+        self.config = config  # experiment configuration
+        experiment.name(self.config.args.name)  # set experiment name
 
-        exe = config['executable']
-        s_in = config['input']
-        s_out = config['output']
+        self.csv_output = self.config.args.csv_output
+        self.snap_output = './output'  # TODO: addargs implimentation
 
-        self.executable = exe
-        self.snap_input = s_in
-        self.snap_output = s_out
+        exe = self.config.args.executable
+        s_in = self.config.args.input
+        s_out = self.snap_output
         self.cmd = F'mpiexec -n 4 {exe} {s_in} {s_out}'
 
-        self.csv_output = config['csv']
         self.data = {
             'Timing Summary': dict()
         }
+
+        self.emit_conf()  # emit config to terminal
+        self.add_assets()  # copy input file to metadata record
+
+    def emit_conf(self):
+        pcd = dict()
+        pcd['Program'] = vars(self.config.args)
+        utils.yamlp(pcd, 'Program')
+
+    def add_assets(self):
+        metadata.add_asset(metadata.FileAsset(self.config.args.input))
+        metadata.add_asset(metadata.FileAsset(self.snap_output))
 
     def post_action(self, **kwargs) -> None:
         '''
@@ -95,7 +105,7 @@ class Experiment:
             ))
             return
 
-    def run(self):
+    def run(self, genspec):
         container.run(
             self.cmd,
             preaction=None,
@@ -103,13 +113,13 @@ class Experiment:
         )
 
     def report(self):
-        logger.emlog(F'# {self. name} Report')
+        logger.emlog(F'# {self.config.args.name} Report')
         logger.log('creating report...')
 
         table = utils.Table()
         sio = io.StringIO(newline=None)
         dataraw = csv.writer(sio)
-        dataraw.writerow([F'## {self.description}'])
+        dataraw.writerow([F'## {self.config.args.description}'])
 
         # Generic data.
         header = ['# EXECUTED:']
@@ -117,7 +127,7 @@ class Experiment:
         dataraw.writerow([self.cmd])
         dataraw.writerow([])
 
-        logger.log('# EXECUTED:')
+        logger.log(header)
         logger.log(self.cmd)
         logger.log('')
 
@@ -136,21 +146,29 @@ class Experiment:
 
 
 def main(argv) -> None:
-    experiment.name('snap-test')
+    #experiment.name('snap-test')
 
     # Program description
     desc = 'bueno run script for SNAP experiments.'
 
     # Default values
-    defaults = dict()
-    defaults['name'] = 'SNAP'
-    defaults['description'] = desc
-    defaults['executable'] = '~/SNAP_build/src/gsnap'
-    defaults['input'] = './experiments/input'
-    defaults['output'] = './output'
-    defaults['csv'] = './data.csv'
+    defaults = experiment.CannedCLIConfiguration.Defaults
+    defaults.csv_output = './data.csv'
+    defaults.description = desc
+    defaults.executable = '~/SNAP_build/src/gsnap'
+    defaults.input = './experiments/input'
+    defaults.name = 'snap'
+    
+    #defaults['output'] = './output'
 
     # Initial configuration
-    exp = Experiment(defaults)
-    exp.run()
-    exp.report()
+    config = experiment.CannedCLIConfiguration(desc, argv, defaults)
+    #config.addargs(output)
+
+    # parse provided arguments.
+    config.parseargs()
+    for genspec in experiment.readgs(config.args.input, config):
+        # Note that config is updated by readgs each iteration
+        exp = Experiment(config)
+        exp.run(genspec)
+        exp.report()
