@@ -6,7 +6,7 @@
 #
 
 '''
-bueno run script for the SN Application Proxy (SNAP).
+Bueno run script for the SN Application Proxy (SNAP).
 '''
 
 import re
@@ -46,6 +46,9 @@ class AddArgsAction(experiment.CLIAddArgsAction):
             setattr(namespace, self.dest, values)
 
     def __call__(self, cliconfig):
+        '''
+        Define new argument
+        '''
         cliconfig.argparser.add_argument(
             '--snapoutfile',
             help="location of snap's output file",
@@ -54,6 +57,9 @@ class AddArgsAction(experiment.CLIAddArgsAction):
 
 
 class Experiment:
+    '''
+    SNAP benchmark definition
+    '''
     def __init__(self, config):
         '''
         Experiment configuration.
@@ -77,23 +83,32 @@ class Experiment:
         self.add_assets()  # copy input file to metadata record
 
     def emit_conf(self):
+        '''
+        Display config
+        '''
         pcd = dict()
         pcd['Program'] = vars(self.config.args)
         utils.yamlp(pcd, 'Program')
 
     def add_assets(self):
+        '''
+        Backup input and output files in metadata
+        '''
         metadata.add_asset(metadata.FileAsset(self.config.args.input))
         metadata.add_asset(metadata.FileAsset(self.snap_output))
 
     def post_action(self, **kwargs) -> None:
         '''
-        Custom post action: metadata collection
+        Custom post action: metadata collection.
         '''
         logger.emlog('# POST-ACTION')
         logger.log('Retrieving SNAP output...')
         self.parse_snapfile()
 
     def parse_snapfile(self):
+        '''
+        Collect time data from snap output file.
+        '''
         with open(self.snap_output) as out_file:
             lines = out_file.readlines()
             table_pos = -1  # time table position
@@ -124,7 +139,7 @@ class Experiment:
 
             for item in data:  # add items to metadata dict
                 label, val = item.split(':')
-                self.data['Timing Summary'][label] = val  # populate metadata file
+                self.data['Timing Summary'][label] = val
 
             logger.log('\nAdding metadata file...')
             metadata.add_asset(metadata.YAMLDictAsset(
@@ -134,6 +149,9 @@ class Experiment:
             return
 
     def run(self, genspec):
+        '''
+        Run benchmark test.
+        '''
         container.run(
             self.cmd,
             preaction=None,
@@ -141,6 +159,9 @@ class Experiment:
         )
 
     def report(self):
+        '''
+        Generate csv report.
+        '''
         logger.emlog(F'# {self.config.args.name} Report')
         logger.log('creating report...\n')
 
@@ -174,7 +195,9 @@ class Experiment:
 
 
 def main(argv) -> None:
-    #experiment.name('snap-test')
+    '''
+    Bueno run script for SN Application Proxy (SNAP).
+    '''
 
     # Program description
     desc = 'bueno run script for SNAP experiments.'
@@ -186,8 +209,6 @@ def main(argv) -> None:
     defaults.executable = '~/SNAP_build/src/gsnap'
     defaults.input = './experiments/input'
     defaults.name = 'snap'
-
-    #defaults['output'] = './output'
 
     # Initial configuration
     config = experiment.CannedCLIConfiguration(desc, argv, defaults)
