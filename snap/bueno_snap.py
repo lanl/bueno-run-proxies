@@ -11,7 +11,9 @@ bueno run script for the SN Application Proxy (SNAP).
 
 import re
 import io
+import os
 import csv
+import argparse
 
 from bueno.public import container
 from bueno.public import experiment
@@ -20,9 +22,35 @@ from bueno.public import metadata
 from bueno.public import utils
 
 
-# SNAP output file variables.
+# SNAP output table variables.
 SO_OFFSET = 5
 SO_WIDTH = 15
+
+
+class AddArgsAction(experiment.CLIAddArgsAction):
+    '''
+    Custom action class to handles custom argument processing
+    '''
+    class SnapOutfileAction(argparse.Action):
+        '''
+        Custom action class for 'snap-outfile' argument structure
+        '''
+        def __init__(self, option_strings, dest, nargs=None, **kwargs):
+            super().__init__(option_strings, dest, **kwargs)
+
+        def __call__(self, parser, namespace, values, option_string=None):
+            # validate provided path
+            if not os.path.isfile(values):
+                estr = F'{values} is not a file. Cannot continue.'
+                parser.error(estr)
+            setattr(namespace, self.dest, values)
+
+    def __call__(self, cliconfig):
+        cliconfig.argparser.add_argument(
+            '--snapoutfile',
+            help="location of snap's output file",
+            default='./output'
+        )
 
 
 class Experiment:
@@ -34,7 +62,7 @@ class Experiment:
         experiment.name(self.config.args.name)  # set experiment name
 
         self.csv_output = self.config.args.csv_output
-        self.snap_output = './output'  # TODO: addargs implimentation
+        self.snap_output = self.config.args.snapoutfile
 
         exe = self.config.args.executable
         s_in = self.config.args.input
@@ -114,7 +142,7 @@ class Experiment:
 
     def report(self):
         logger.emlog(F'# {self.config.args.name} Report')
-        logger.log('creating report...')
+        logger.log('creating report...\n')
 
         table = utils.Table()
         sio = io.StringIO(newline=None)
@@ -122,7 +150,7 @@ class Experiment:
         dataraw.writerow([F'## {self.config.args.description}'])
 
         # Generic data.
-        header = ['# EXECUTED:']
+        header = '# EXECUTED:'
         dataraw.writerow(header)
         dataraw.writerow([self.cmd])
         dataraw.writerow([])
@@ -158,12 +186,12 @@ def main(argv) -> None:
     defaults.executable = '~/SNAP_build/src/gsnap'
     defaults.input = './experiments/input'
     defaults.name = 'snap'
-    
+
     #defaults['output'] = './output'
 
     # Initial configuration
     config = experiment.CannedCLIConfiguration(desc, argv, defaults)
-    #config.addargs(output)
+    config.addargs(AddArgsAction)
 
     # parse provided arguments.
     config.parseargs()

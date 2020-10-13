@@ -21,7 +21,7 @@ the run script can easily be tweaked to read more or less lines when
 gathering metadata.
 
 ```Python
-# snap output file variables
+# snap output table variables
 SO_OFFSET = 5
 SO_WIDTH = 15
 
@@ -33,7 +33,7 @@ time_table = lines[start:end]  # isolate table lines
 
 ## Execute:
 ```Shell
-bueno run -a none -p bueno_snap.py 
+bueno run -a none -p bueno_snap.py
 ```
 After execution, the metadata files are stored in the new local snap folder.
 The one created by the custom post action is called: "timing-metadata.yaml".
