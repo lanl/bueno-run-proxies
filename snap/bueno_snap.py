@@ -169,10 +169,11 @@ class Experiment:
         sio = io.StringIO(newline=None)
         dataraw = csv.writer(sio)
         dataraw.writerow([F'## {self.config.args.description}'])
-
+        dataraw.writerow([])
+        
         # Generic data.
-        header = '# EXECUTED:'
-        dataraw.writerow(header)
+        header = '# Cmd Executed:'
+        dataraw.writerow([header])
         dataraw.writerow([self.cmd])
         dataraw.writerow([])
 
@@ -181,9 +182,14 @@ class Experiment:
         logger.log('')
 
         # Time Summary Data.
-        header = ['# TIMING SUMMARY:']
+        header = ['# Timing Summary:', '']
         dataraw.writerow(header)
         table.addrow(header)
+
+        header = ['Code Section', 'Time (s)']
+        dataraw.writerow(header)
+        table.addrow(header)
+
         for label in self.data['Timing Summary']:
             value = self.data['Timing Summary'][label]
             dataraw.writerow([label, value])
@@ -192,6 +198,7 @@ class Experiment:
         csvfname = self.csv_output
         metadata.add_asset(metadata.StringIOAsset(sio, csvfname))
         table.emit()
+        logger.log('')
 
 
 def main(argv) -> None:
