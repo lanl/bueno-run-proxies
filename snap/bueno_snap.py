@@ -33,7 +33,7 @@ class AddArgsAction(experiment.CLIAddArgsAction):
     '''
     class SnapOutfileAction(argparse.Action):
         '''
-        Custom action class for 'snap-outfile' argument structure
+        Custom action class: SNAP input & output files argument structure
         '''
         def __init__(self, option_strings, dest, nargs=None, **kwargs):
             super().__init__(option_strings, dest, **kwargs)
@@ -49,6 +49,12 @@ class AddArgsAction(experiment.CLIAddArgsAction):
         '''
         Define new argument
         '''
+        cliconfig.argparser.add_argument(
+            '--snapinfile',
+            help="location of snap's input file",
+            default='./input'
+        )
+
         cliconfig.argparser.add_argument(
             '--snapoutfile',
             help="location of snap's output file",
@@ -67,16 +73,19 @@ class Experiment:
         self.config = config  # experiment configuration
         experiment.name(self.config.args.name)  # set experiment name
 
-        self.csv_output = self.config.args.csv_output
+        self.executable = self.config.args.executable
+        self.snap_input = self.config.args.snapinfile
         self.snap_output = self.config.args.snapoutfile
+        self.csv_output = self.config.args.csv_output
 
-        exe = self.config.args.executable
-        s_in = self.config.args.input
+        exe = self.executable
+        s_in = self.snap_input
         s_out = self.snap_output
         self.cmd = F'mpiexec -n 4 {exe} {s_in} {s_out}'
 
         self.data = {
-            'Timing Summary': dict()
+            'Timing Summary': dict(),
+            'Commands': dict()
         }
 
         self.emit_conf()  # emit config to terminal
@@ -94,7 +103,7 @@ class Experiment:
         '''
         Backup input and output files in metadata
         '''
-        metadata.add_asset(metadata.FileAsset(self.config.args.input))
+        metadata.add_asset(metadata.FileAsset(self.snap_input))
         metadata.add_asset(metadata.FileAsset(self.snap_output))
 
     def post_action(self, **kwargs) -> None:
@@ -152,11 +161,17 @@ class Experiment:
         '''
         Run benchmark test.
         '''
-        container.run(
-            self.cmd,
-            preaction=None,
-            postaction=self.post_action
-        )
+        logger.emlog('# Starting Runs...')
+
+        # generate run commands for current experiment
+        rcmd = self.config.args.runcmds
+        pruns = experiment.runcmds(rcmd[0], rcmd[1], rcmd[2], rcmd[3])
+        
+        executable = self.config.args.executable
+        appargs = genspec.format(executable)
+        for prun in pruns:
+            logger.log('')
+            container.prun(prun, appargs, postaction=self.post_action)
 
     def report(self):
         '''
@@ -216,6 +231,7 @@ def main(argv) -> None:
     defaults.executable = '~/SNAP_build/src/gsnap'
     defaults.input = './experiments/input'
     defaults.name = 'snap'
+    defaults.runcmds = (4,4, 'mpiexec -n %n', 'nidx')
 
     # Initial configuration
     config = experiment.CannedCLIConfiguration(desc, argv, defaults)
