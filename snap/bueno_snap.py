@@ -78,11 +78,6 @@ class Experiment:
         self.snap_output = self.config.args.snapoutfile
         self.csv_output = self.config.args.csv_output
 
-        exe = self.executable
-        s_in = self.snap_input
-        s_out = self.snap_output
-        self.cmd = F'mpiexec -n 4 {exe} {s_in} {s_out}'
-
         self.data = {
             'Timing Summary': dict(),
             'Commands': dict()
@@ -113,6 +108,7 @@ class Experiment:
         '''
         logger.emlog('# POST-ACTION')
         logger.log('Retrieving SNAP output...')
+        self.cmd = kwargs['command']
         self.parse_snapfile()
 
     def parse_snapfile(self):
