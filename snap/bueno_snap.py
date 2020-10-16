@@ -167,7 +167,7 @@ class Experiment:
         # generate run commands for current experiment
         rcmd = self.config.args.runcmds
         pruns = experiment.runcmds(rcmd[0], rcmd[1], rcmd[2], rcmd[3])
-        
+
         executable = self.config.args.executable
         appargs = genspec.format(executable)
         for prun in pruns:
@@ -186,7 +186,7 @@ class Experiment:
         dataraw = csv.writer(sio)
         dataraw.writerow([F'## {self.config.args.description}'])
         dataraw.writerow([])
-        
+
         # Generic data.
         header = '# Cmd Executed:'
         dataraw.writerow([header])
@@ -232,7 +232,7 @@ def main(argv) -> None:
     defaults.executable = '~/SNAP_build/src/gsnap'
     defaults.input = './experiments/config'
     defaults.name = 'snap'
-    defaults.runcmds = (4,4, 'mpiexec -n %n', 'nidx')
+    defaults.runcmds = (4, 4, 'mpiexec -n %n', 'nidx')
 
     # Initial configuration
     config = experiment.CannedCLIConfiguration(desc, argv, defaults)
