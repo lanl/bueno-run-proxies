@@ -52,13 +52,13 @@ class AddArgsAction(experiment.CLIAddArgsAction):
         cliconfig.argparser.add_argument(
             '--snapinfile',
             help="location of snap's input file",
-            default='./input'
+            default='./experiments/input'
         )
 
         cliconfig.argparser.add_argument(
             '--snapoutfile',
             help="location of snap's output file",
-            default='./output'
+            default='./experiments/output'
         )
 
 
@@ -103,6 +103,7 @@ class Experiment:
         '''
         Backup input and output files in metadata
         '''
+        metadata.add_asset(metadata.FileAsset(self.config.args.input))
         metadata.add_asset(metadata.FileAsset(self.snap_input))
         metadata.add_asset(metadata.FileAsset(self.snap_output))
 
@@ -229,7 +230,7 @@ def main(argv) -> None:
     defaults.csv_output = './data.csv'
     defaults.description = desc
     defaults.executable = '~/SNAP_build/src/gsnap'
-    defaults.input = './experiments/input'
+    defaults.input = './experiments/config'
     defaults.name = 'snap'
     defaults.runcmds = (4,4, 'mpiexec -n %n', 'nidx')
 

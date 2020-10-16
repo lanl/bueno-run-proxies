@@ -13,7 +13,12 @@ defaults.description = desc
 defaults.executable = '~/SNAP_build/src/gsnap'
 defaults.input = './experiments/input'
 defaults.name = 'snap'
+defaults.runcmds = (4,4, 'mpiexec -n %n', 'nidx')
 ```
+
+These default settings are mirrored in the input file for bueno found in the
+experiments folder. Customizing the experiment should be done in this file
+rather than bueno_snap.py.
 
 Additionally, there are some options for acquiring the timing table from the
 output file. In the event that the size of the table is modified in future,
@@ -36,6 +41,6 @@ time_table = lines[start:end]  # isolate table lines
 bueno run -a none -p bueno_snap.py
 ```
 After execution, the metadata files are stored in the new local snap folder.
-The one created by the custom post action is called: "timing-metadata.yaml".
-Additionally, the generated report is saved as: "data.csv" in the same
+The one created by the custom post action is called: timing-metadata.yaml.
+Additionally, the generated report is saved as: data.csv in the same
 directory.
