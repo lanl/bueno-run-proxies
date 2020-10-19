@@ -2,9 +2,11 @@
 
 ## Defaults:
 There are several defaults established in main portion of the run script.
-These include, the description of the experiment being performed, the path to
-the SNAP instance, SNAP's input and output file destinations, as well as the
-destination of the bueno csv report file.
+These include, the name and description of the experiment being performed,
+the path to the SNAP instance, SNAP's input and output file destinations,
+the bueno input file, as well as the destination of the bueno csv report file
+and the variable portions of the run commands.
+
 ```Python
 # Default values
 defaults = experiment.CannedCLIConfiguration.Defaults
@@ -13,12 +15,12 @@ defaults.description = desc
 defaults.executable = '~/SNAP_build/src/gsnap'
 defaults.input = './experiments/input'
 defaults.name = 'snap'
-defaults.runcmds = (4,4, 'mpiexec -n %n', 'nidx')
+defaults.runcmds = (4, 4, 'mpiexec -n %n', 'nidx')
 ```
 
-These default settings are mirrored in the input file for bueno found in the
-experiments folder. Customizing the experiment should be done in this file
-rather than bueno_snap.py.
+These default settings are mirrored in the input file for bueno, config,
+found in the experiments folder. Customizing the experiment should be done in
+this file rather than bueno_snap.py.
 
 Additionally, there are some options for acquiring the timing table from the
 output file. In the event that the size of the table is modified in future,

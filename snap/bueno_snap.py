@@ -39,7 +39,7 @@ class AddArgsAction(experiment.CLIAddArgsAction):
             super().__init__(option_strings, dest, **kwargs)
 
         def __call__(self, parser, namespace, values, option_string=None):
-            # validate provided path
+            # Validate provided path
             if not os.path.isfile(values):
                 estr = F'{values} is not a file. Cannot continue.'
                 parser.error(estr)
@@ -70,21 +70,23 @@ class Experiment:
         '''
         Experiment configuration.
         '''
-        self.config = config  # experiment configuration
-        experiment.name(self.config.args.name)  # set experiment name
+        self.config = config  # Experiment configuration
+        experiment.name(self.config.args.name)  # Set experiment name
 
         self.executable = self.config.args.executable
         self.snap_input = self.config.args.snapinfile
         self.snap_output = self.config.args.snapoutfile
         self.csv_output = self.config.args.csv_output
 
+        self.cmd = ''  # Assigned during post action.
+
         self.data = {
             'Timing Summary': dict(),
             'Commands': dict()
         }
 
-        self.emit_conf()  # emit config to terminal
-        self.add_assets()  # copy input file to metadata record
+        self.emit_conf()  # Emit config
+        self.add_assets()  # Copy input file to metadata record
 
     def emit_conf(self):
         '''
@@ -108,8 +110,8 @@ class Experiment:
         '''
         logger.emlog('# POST-ACTION')
         logger.log('Retrieving SNAP output...')
-        self.cmd = kwargs['command']
-        self.parse_snapfile()
+        self.cmd = kwargs['command']  # Record command used for report
+        self.parse_snapfile()  # Process snap output
 
     def parse_snapfile(self):
         '''
@@ -117,33 +119,34 @@ class Experiment:
         '''
         with open(self.snap_output) as out_file:
             lines = out_file.readlines()
-            table_pos = -1  # time table position
+            table_pos = -1  # Time table position
 
             for num, line in enumerate(lines):
+                # Search for time table
                 if 'keyword Timing Summary' in line:
                     table_pos = num
                     logger.log(F'Found time table on line: {table_pos}\n')
 
-            if table_pos == -1:
+            if table_pos == -1:  # No table found
                 logger.log('ERROR: EOF reached before time table found')
                 return
 
             start = table_pos + SO_OFFSET
             end = table_pos + SO_OFFSET + SO_WIDTH
-            time_table = lines[start:end]  # isolate table lines
+            time_table = lines[start:end]  # Isolate table lines
             data = []
 
-            for row in time_table:  # format data string
+            for row in time_table:  # Format data string
                 row = row.strip()
                 row = re.sub(r'[ ]{2,}', ': ', row)
 
-                if row == '':  # skip empty
+                if row == '':  # Skip empty
                     continue
 
                 logger.log(F'[data] {row}')
-                data.append(row)  # append formatted item
+                data.append(row)  # Append formatted item.
 
-            for item in data:  # add items to metadata dict
+            for item in data:  # Add items to metadata dict.
                 label, val = item.split(':')
                 self.data['Timing Summary'][label] = val
 
@@ -160,7 +163,7 @@ class Experiment:
         '''
         logger.emlog('# Starting Runs...')
 
-        # generate run commands for current experiment
+        # Generate run commands for current experiment.
         rcmd = self.config.args.runcmds
         pruns = experiment.runcmds(rcmd[0], rcmd[1], rcmd[2], rcmd[3])
 
@@ -183,7 +186,7 @@ class Experiment:
         dataraw.writerow([F'## {self.config.args.description}'])
         dataraw.writerow([])
 
-        # Generic data.
+        # Generic data
         header = '# Cmd Executed:'
         dataraw.writerow([header])
         dataraw.writerow([self.cmd])
@@ -193,7 +196,7 @@ class Experiment:
         logger.log(self.cmd)
         logger.log('')
 
-        # Time Summary Data.
+        # Time Summary Data
         header = ['# Timing Summary:', '']
         dataraw.writerow(header)
         table.addrow(header)
@@ -234,10 +237,10 @@ def main(argv) -> None:
     config = experiment.CannedCLIConfiguration(desc, argv, defaults)
     config.addargs(AddArgsAction)
 
-    # parse provided arguments.
+    # Parse provided arguments.
     config.parseargs()
     for genspec in experiment.readgs(config.args.input, config):
-        # Note that config is updated by readgs each iteration
+        # Note that config is updated by readgs each iteration.
         exp = Experiment(config)
         exp.run(genspec)
         exp.report()
