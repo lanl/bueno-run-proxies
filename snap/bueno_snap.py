@@ -1,5 +1,5 @@
 #
-# Written by Jacob Dickens, 2020
+# Written by Jacob Dickens, Sept-2020
 #
 # This file is part of the bueno project. See the LICENSE file at the
 # top-level directory of this distribution for more information.
@@ -188,13 +188,13 @@ class Experiment:
 
         # Generic data
         header = '# Cmd Executed:'
-        dataraw.writerow([header])
+        dataraw.writerow([header])  # write to csv
         dataraw.writerow([self.cmd])
         dataraw.writerow([])
 
-        logger.log(header)
-        logger.log(self.cmd)
-        logger.log('')
+        table.addrow([header, ''])  # dislay table
+        table.addrow([self.cmd, ''])
+        table.addrow(['',''])
 
         # Time Summary Data
         header = ['# Timing Summary:', '']
