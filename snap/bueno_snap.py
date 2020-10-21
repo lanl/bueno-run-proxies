@@ -27,6 +27,7 @@ SO_OFFSET = 5
 SO_WIDTH = 15
 
 
+# Custom argument extras
 class AddArgsAction(experiment.CLIAddArgsAction):
     '''
     Custom action class to handles custom argument processing
@@ -70,8 +71,8 @@ class Experiment:
         '''
         Experiment configuration.
         '''
-        self.config = config  # Experiment configuration
-        experiment.name(self.config.args.name)  # Set experiment name
+        self.config = config  # The experiment configuration.
+        experiment.name(self.config.args.name)  # Set experiment's name
 
         self.executable = self.config.args.executable
         self.snap_input = self.config.args.snapinfile
@@ -81,11 +82,10 @@ class Experiment:
         self.cmd = ''  # Assigned during post action.
 
         self.data = {
-            'Timing Summary': dict(),
-            'Commands': dict()
+            'Timing Summary': dict()
         }
 
-        self.emit_conf()  # Emit config
+        self.emit_conf()  # Emit config to terminal
         self.add_assets()  # Copy input file to metadata record
 
     def emit_conf(self):
