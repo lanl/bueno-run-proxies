@@ -184,22 +184,15 @@ class Experiment:
         sio = io.StringIO(newline=None)
         dataraw = csv.writer(sio)
         dataraw.writerow([F'## {self.config.args.description}'])
-        dataraw.writerow([])
 
         # Generic data
-        header = '# Cmd Executed:'
-        dataraw.writerow([header])  # write to csv
+        dataraw.writerow(['## Cmd Executed:'])  # write to csv
         dataraw.writerow([self.cmd])
-        dataraw.writerow([])
-
-        table.addrow([header, ''])  # dislay table
-        table.addrow([self.cmd, ''])
-        table.addrow(['',''])
 
         # Time Summary Data
-        header = ['# Timing Summary:', '']
-        dataraw.writerow(header)
-        table.addrow(header)
+        header = '## Timing Summary:'
+        dataraw.writerow([header])
+        table.addrow([header, ''])
 
         header = ['Code Section', 'Time (s)']
         dataraw.writerow(header)

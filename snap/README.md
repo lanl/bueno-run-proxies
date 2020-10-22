@@ -22,6 +22,12 @@ These default settings are mirrored in the input file for bueno, config,
 found in the experiments folder. Customizing the experiment should be done in
 this file rather than bueno_snap.py.
 
+> ### NOTE:
+> If you are planning on modifying the run commands, it's important that
+> you make similar changes in SNAP's input file. The value assigned to ndix,
+> the range of which is defined by the first two integers in runcmds, must be
+> the product of the values npey and npez.
+
 Additionally, there are some options for acquiring the timing table from the
 output file. In the event that the size of the table is modified in future,
 the run script can easily be tweaked to read more or less lines when
@@ -37,6 +43,8 @@ start = table_pos + SO_OFFSET
 end = table_pos + SO_OFFSET + SO_WIDTH
 time_table = lines[start:end]  # isolate table lines
 ```
+
+---
 
 ## Execute:
 ```Shell
