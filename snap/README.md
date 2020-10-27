@@ -1,4 +1,4 @@
-# bueno_snap.py
+# bueno-run-proxies | SNAP
 
 ## Defaults:
 There are several defaults established in main portion of the run script.
@@ -54,3 +54,11 @@ After execution, the metadata files are stored in the new local snap folder.
 The one created by the custom post action is called: timing-metadata.yaml.
 Additionally, the generated report is saved as: data.csv in the same
 directory.
+
+If the intention is to run the containerized version of the application,
+then the execute command changes slightly to include the tarball created in
+the parallel bueno-proxies-src repository.
+
+```Shell
+bueno run -a ~/bueno-proxies-src/snap/test-snap.tar.gz
+```
