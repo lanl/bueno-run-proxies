@@ -1,6 +1,6 @@
 ! Input from namelist
 &invar
-  npey=2
+  npey=3
   npez=2
   ichunk=2
   nthreads=2

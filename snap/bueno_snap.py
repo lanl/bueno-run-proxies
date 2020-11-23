@@ -27,28 +27,28 @@ SO_OFFSET = 5
 SO_WIDTH = 15
 
 
-# Custom argument extras
 class AddArgsAction(experiment.CLIAddArgsAction):
     '''
-    Custom action class to handles custom argument processing
+    Handle custom argument processing
     '''
     class SnapOutfileAction(argparse.Action):
         '''
-        Custom action class: SNAP input & output files argument structure
+        Qrgument structure for SNAP input & output files
         '''
         def __init__(self, option_strings, dest, nargs=None, **kwargs):
             super().__init__(option_strings, dest, **kwargs)
 
         def __call__(self, parser, namespace, values, option_string=None):
-            # Validate provided path
+            # Validate provided file path
+            # Display custom error if not
             if not os.path.isfile(values):
-                estr = F'{values} is not a file. Cannot continue.'
+                estr = F'{values} is not a valid file! Cannot continue!'
                 parser.error(estr)
             setattr(namespace, self.dest, values)
 
     def __call__(self, cliconfig):
         '''
-        Define new argument
+        New argument definitions
         '''
         cliconfig.argparser.add_argument(
             '--snapinfile',
@@ -90,7 +90,7 @@ class Experiment:
 
     def emit_conf(self):
         '''
-        Display config
+        Display config in terminal
         '''
         pcd = dict()
         pcd['Program'] = vars(self.config.args)
@@ -103,6 +103,35 @@ class Experiment:
         metadata.add_asset(metadata.FileAsset(self.config.args.input))
         metadata.add_asset(metadata.FileAsset(self.snap_input))
         metadata.add_asset(metadata.FileAsset(self.snap_output))
+
+    def pre_action(self, **kwargs) -> None:
+        '''
+        Custom pre action: update snap input
+        '''
+        logger.emlog('# PRE-ACTION')
+        logger.log('Updating snap input')
+
+        # Perform dimension factorisation given volume
+        volume = int(kwargs["command"].split(" ")[2])
+        dimensions = experiment.evaluate_factors(volume, 2)
+
+        # Read snap input file to list
+        with open(self.snap_input) as in_file:
+            lines = in_file.readlines()
+
+        # Modify snap configuration list
+        updated = []
+        for row in lines:
+            if 'npey' in row:
+                updated.append(F'  npey={dimensions[0]}\n')
+            elif 'npez' in row:
+                updated.append(F'  npez={dimensions[1]}\n')
+            else:
+                updated.append(row)
+
+        # overwrite to file
+        with open(self.snap_input, 'wt') as in_file:
+            in_file.writelines(updated)
 
     def post_action(self, **kwargs) -> None:
         '''
@@ -171,7 +200,12 @@ class Experiment:
         appargs = genspec.format(executable)
         for prun in pruns:
             logger.log('')
-            container.prun(prun, appargs, postaction=self.post_action)
+            container.prun(
+                prun,
+                appargs,
+                preaction=self.pre_action,
+                postaction=self.post_action
+            )
 
     def report(self):
         '''

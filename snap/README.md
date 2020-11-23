@@ -60,5 +60,5 @@ then the execute command changes slightly to include the tarball created in
 the parallel bueno-proxies-src repository.
 
 ```Shell
-bueno run -a ~/bueno-proxies-src/snap/test-snap.tar.gz
+bueno run -i ~/bueno-proxies-src/snap/test-snap.tar.gz -p bueno_snap.py
 ```
