@@ -1,11 +1,13 @@
 # bueno-run-proxies | SNAP
 
-## Defaults:
+## Defaults Parameters:
 There are several defaults established in main portion of the run script.
 These include, the name and description of the experiment being performed,
 the path to the SNAP instance, SNAP's input and output file destinations,
 the bueno input file, as well as the destination of the bueno csv report file
-and the variable portions of the run commands.
+and the variable portions of the run commands. The first two items of the
+run commands (runcmds) control the iterative portion of the script's
+benchmarking proceedure; defining the range of inputs to be tested.
 
 ```Python
 # Default values
@@ -18,15 +20,13 @@ defaults.name = 'snap'
 defaults.runcmds = (4, 4, 'mpiexec -n %n', 'nidx')
 ```
 
-These default settings are mirrored in the input file for bueno, config,
-found in the experiments folder. Customizing the experiment should be done in
-this file rather than bueno_snap.py.
+## Custom Configuration:
+The default settings outlined above are mirrored in the config file found in
+the experiment directory. Custom configurations should be defined here rather than directly in the run script; the config file is consulted during runtime and
+overwrites the default configuration if present.
 
-> ### NOTE:
-> If you are planning on modifying the run commands, it's important that
-> you make similar changes in SNAP's input file. The value assigned to ndix,
-> the range of which is defined by the first two integers in runcmds, must be
-> the product of the values npey and npez.
+> Note:
+> 
 
 Additionally, there are some options for acquiring the timing table from the
 output file. In the event that the size of the table is modified in future,
@@ -44,9 +44,10 @@ end = table_pos + SO_OFFSET + SO_WIDTH
 time_table = lines[start:end]  # isolate table lines
 ```
 
----
+## Script Execution:
 
-## Execute:
+Generic runscript execution, without an application container, follows the 
+procedure outlined in the examples defined in the main readme document.
 ```Shell
 bueno run -a none -p bueno_snap.py
 ```

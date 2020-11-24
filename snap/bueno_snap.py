@@ -11,9 +11,8 @@ Bueno run script for the SN Application Proxy (SNAP).
 
 import re
 import io
-import os
 import csv
-import argparse
+import typing
 
 from bueno.public import container
 from bueno.public import experiment
@@ -31,22 +30,7 @@ class AddArgsAction(experiment.CLIAddArgsAction):
     '''
     Handle custom argument processing
     '''
-    class SnapOutfileAction(argparse.Action):
-        '''
-        Qrgument structure for SNAP input & output files
-        '''
-        def __init__(self, option_strings, dest, nargs=None, **kwargs):
-            super().__init__(option_strings, dest, **kwargs)
-
-        def __call__(self, parser, namespace, values, option_string=None):
-            # Validate provided file path
-            # Display custom error if not
-            if not os.path.isfile(values):
-                estr = F'{values} is not a valid file! Cannot continue!'
-                parser.error(estr)
-            setattr(namespace, self.dest, values)
-
-    def __call__(self, cliconfig):
+    def __call__(self, cliconfig: experiment.CLIConfiguration) -> None:
         '''
         New argument definitions
         '''
@@ -67,59 +51,61 @@ class Experiment:
     '''
     SNAP benchmark definition
     '''
-    def __init__(self, config):
+    def __init__(self, config: experiment.CLIConfiguration):
         '''
         Experiment configuration.
         '''
-        self.config = config  # The experiment configuration.
-        experiment.name(self.config.args.name)  # Set experiment's name
+        experiment.name(config.args.name)
 
+        # set experiment configuration, executable and data output.
+        self.config = config
         self.executable = self.config.args.executable
-        self.snap_input = self.config.args.snapinfile
-        self.snap_output = self.config.args.snapoutfile
         self.csv_output = self.config.args.csv_output
 
-        self.cmd = ''  # Assigned during post action.
+        # establish custom snap properties.
+        self.snap_input = self.config.args.snapinfile
+        self.snap_output = self.config.args.snapoutfile
 
-        self.data = {
-            'Timing Summary': dict()
-        }
+        self.cmd = ''  # Assigned and retained during post action.
+
+        self.data: typing.Dict[str, str] = {}
 
         self.emit_conf()  # Emit config to terminal
         self.add_assets()  # Copy input file to metadata record
 
-    def emit_conf(self):
+    def emit_conf(self) -> None:
         '''
-        Display config in terminal
+        Display & record Experiment configuration.
         '''
         pcd = dict()
         pcd['Program'] = vars(self.config.args)
         utils.yamlp(pcd, 'Program')
 
-    def add_assets(self):
+    def add_assets(self) -> None:
         '''
-        Backup input and output files in metadata
+        Backup input and output files in metadata (including snap files).
         '''
         metadata.add_asset(metadata.FileAsset(self.config.args.input))
         metadata.add_asset(metadata.FileAsset(self.snap_input))
         metadata.add_asset(metadata.FileAsset(self.snap_output))
 
-    def pre_action(self, **kwargs) -> None:
+    def pre_action(self, **kwargs: typing.Dict[str, str]) -> None:
         '''
         Custom pre action: update snap input
         '''
         logger.emlog('# PRE-ACTION')
         logger.log('Updating snap input')
 
-        # Perform dimension factorisation given volume
+        # Fetch volume for decomposition from command execution.
+        # Perform factor evaluation.
         volume = int(kwargs["command"].split(" ")[2])
         dimensions = experiment.evaluate_factors(volume, 2)
 
-        # Read snap input file to list
+        # Parse snap input file to list
+        # Update configuration settings to match volume.
         with open(self.snap_input) as in_file:
             lines = in_file.readlines()
 
-        # Modify snap configuration list
         updated = []
         for row in lines:
             if 'npey' in row:
@@ -129,20 +115,23 @@ class Experiment:
             else:
                 updated.append(row)
 
-        # overwrite to file
+        # overwrite SNAP input file
         with open(self.snap_input, 'wt') as in_file:
             in_file.writelines(updated)
 
-    def post_action(self, **kwargs) -> None:
+    def post_action(self, **kwargs: typing.Dict[str, str]) -> None:
         '''
         Custom post action: metadata collection.
         '''
         logger.emlog('# POST-ACTION')
         logger.log('Retrieving SNAP output...')
-        self.cmd = kwargs['command']  # Record command used for report
-        self.parse_snapfile()  # Process snap output
 
-    def parse_snapfile(self):
+        # Record command used.
+        # Process snap output.
+        self.cmd = kwargs['command']
+        self.parse_snapfile()
+
+    def parse_snapfile(self) -> None:
         '''
         Collect time data from snap output file.
         '''
@@ -156,7 +145,8 @@ class Experiment:
                     table_pos = num
                     logger.log(F'Found time table on line: {table_pos}\n')
 
-            if table_pos == -1:  # No table found
+            # No table found.
+            if table_pos == -1:
                 logger.log('ERROR: EOF reached before time table found')
                 return
 
@@ -165,28 +155,32 @@ class Experiment:
             time_table = lines[start:end]  # Isolate table lines
             data = []
 
-            for row in time_table:  # Format data string
+            # Format data string for yaml file
+            for row in time_table:
                 row = row.strip()
                 row = re.sub(r'[ ]{2,}', ': ', row)
 
                 if row == '':  # Skip empty
                     continue
 
+                # Else append formatted item.
                 logger.log(F'[data] {row}')
-                data.append(row)  # Append formatted item.
+                data.append(row)
 
-            for item in data:  # Add items to metadata dict.
+            # Add items to metadata dictionary.
+            for item in data:
                 label, val = item.split(':')
-                self.data['Timing Summary'][label] = val
+                self.data[label] = val
 
+            # Save dictionary data.
             logger.log('\nAdding metadata file...')
             metadata.add_asset(metadata.YAMLDictAsset(
-                self.data['Timing Summary'],
+                self.data,
                 'timing-metadata'
             ))
             return
 
-    def run(self, genspec):
+    def run(self, genspec: str) -> None:
         '''
         Run benchmark test.
         '''
@@ -207,33 +201,34 @@ class Experiment:
                 postaction=self.post_action
             )
 
-    def report(self):
+    def report(self) -> None:
         '''
         Generate csv report.
         '''
         logger.emlog(F'# {self.config.args.name} Report')
         logger.log('creating report...\n')
 
+        # Setup table
         table = utils.Table()
         sio = io.StringIO(newline=None)
         dataraw = csv.writer(sio)
         dataraw.writerow([F'## {self.config.args.description}'])
 
-        # Generic data
-        dataraw.writerow(['## Cmd Executed:'])  # write to csv
+        # Add generic data to csv.
+        dataraw.writerow(['## Cmd Executed:'])
         dataraw.writerow([self.cmd])
 
-        # Time Summary Data
+        # Copy time Summary Data.
         header = '## Timing Summary:'
         dataraw.writerow([header])
         table.addrow([header, ''])
 
-        header = ['Code Section', 'Time (s)']
-        dataraw.writerow(header)
-        table.addrow(header)
+        columns = ['Code Section', 'Time (s)']
+        dataraw.writerow(columns)
+        table.addrow(columns)
 
-        for label in self.data['Timing Summary']:
-            value = self.data['Timing Summary'][label]
+        for label in self.data:
+            value = self.data[label]
             dataraw.writerow([label, value])
             table.addrow([label, value])
 
@@ -243,11 +238,10 @@ class Experiment:
         logger.log('')
 
 
-def main(argv) -> None:
+def main(argv: typing.List[str]) -> None:
     '''
     Bueno run script for SN Application Proxy (SNAP).
     '''
-
     # Program description
     desc = 'bueno run script for SNAP experiments.'
 
