@@ -22,8 +22,9 @@ defaults.runcmds = (4, 4, 'mpiexec -n %n', 'nidx')
 
 ## Custom Configuration:
 The default settings outlined above are mirrored in the config file found in
-the experiment directory. Custom configurations should be defined here rather than directly in the run script; the config file is consulted during runtime and
-overwrites the default configuration if present.
+the experiment directory. Custom configurations should be defined here rather
+than directly in the run script; the config file is consulted during runtime
+and overwrites the default configuration if present.
 
 > Note:
 > 
@@ -63,3 +64,13 @@ the parallel bueno-proxies-src repository.
 ```Shell
 bueno run -i ~/bueno-proxies-src/snap/test-snap.tar.gz -p bueno_snap.py
 ```
+
+<br/>
+
+### Los Alamos National Laboratory Code Release
+C19133 [bueno](https://github.com/lanl/bueno)
+
+<br/>
+
+-------------------------------------------------------------------------------
+Last Modified - 11/24/2020

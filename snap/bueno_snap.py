@@ -26,6 +26,7 @@ SO_OFFSET = 5
 SO_WIDTH = 15
 
 
+# pylint: disable=too-few-public-methods
 class AddArgsAction(experiment.CLIAddArgsAction):
     '''
     Handle custom argument processing
@@ -98,7 +99,7 @@ class Experiment:
 
         # Fetch volume for decomposition from command execution.
         # Perform factor evaluation.
-        volume = int(kwargs["command"].split(" ")[2])
+        volume = int(str(kwargs["command"]).split(" ")[2])
         dimensions = experiment.evaluate_factors(volume, 2)
 
         # Parse snap input file to list
@@ -128,7 +129,7 @@ class Experiment:
 
         # Record command used.
         # Process snap output.
-        self.cmd = kwargs['command']
+        self.cmd = str(kwargs['command'])
         self.parse_snapfile()
 
     def parse_snapfile(self) -> None:
