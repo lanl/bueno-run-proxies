@@ -95,12 +95,13 @@ class Experiment:
         Custom pre action: update snap input
         '''
         logger.emlog('# PRE-ACTION')
-        logger.log('Updating snap input')
+        logger.log('Updating snap input...')
 
         # Fetch volume for decomposition from command execution.
         # Perform factor evaluation.
         volume = int(str(kwargs["command"]).split(" ")[2])
         dimensions = experiment.evaluate_factors(volume, 2)
+        logger.log('Factor calculated!')
 
         # Parse snap input file to list
         # Update configuration settings to match volume.
@@ -113,6 +114,10 @@ class Experiment:
                 updated.append(F'  npey={dimensions[0]}\n')
             elif 'npez' in row:
                 updated.append(F'  npez={dimensions[1]}\n')
+            elif 'ny' in row:
+                updated.append(F'  ny={dimensions[0]}\n')
+            elif 'nz' in row:
+                updated.append(F'  nz={dimensions[1]}\n')
             else:
                 updated.append(row)
 
@@ -253,7 +258,7 @@ def main(argv: typing.List[str]) -> None:
     defaults.executable = '~/SNAP_build/src/gsnap'
     defaults.input = './experiments/config'
     defaults.name = 'snap'
-    defaults.runcmds = (4, 4, 'mpiexec -n %n', 'nidx')
+    defaults.runcmds = (4, 6, 'mpiexec -n %n', 'nidx')
 
     # Initial configuration
     config = experiment.CannedCLIConfiguration(desc, argv, defaults)

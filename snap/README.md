@@ -7,7 +7,7 @@ the path to the SNAP instance, SNAP's input and output file destinations,
 the bueno input file, as well as the destination of the bueno csv report file
 and the variable portions of the run commands. The first two items of the
 run commands (runcmds) control the iterative portion of the script's
-benchmarking proceedure; defining the range of inputs to be tested.
+benchmarking proceedure; defining the inclusive range of inputs to be tested.
 
 ```Python
 # Default values
@@ -17,7 +17,7 @@ defaults.description = desc
 defaults.executable = '~/SNAP_build/src/gsnap'
 defaults.input = './experiments/input'
 defaults.name = 'snap'
-defaults.runcmds = (4, 4, 'mpiexec -n %n', 'nidx')
+defaults.runcmds = (4, 10, 'mpiexec -n %n', 'nidx')
 ```
 
 ## Custom Configuration:
@@ -73,4 +73,4 @@ C19133 [bueno](https://github.com/lanl/bueno)
 <br/>
 
 -------------------------------------------------------------------------------
-Last Modified - 11/24/2020
+Last Modified - 11/30/2020

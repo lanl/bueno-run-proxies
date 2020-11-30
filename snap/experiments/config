@@ -4,5 +4,5 @@
 # --executable '~/SNAP_build/src/gsnap'
 # --input './experiments/config'
 # --name 'snap'
-# --runcmds "4, 6, 'mpiexec -n %n', 'nidx'"
+# --runcmds "4, 10, 'mpiexec -n %n', 'nidx'"
 {} ./experiments/input ./experiments/output
