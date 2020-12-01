@@ -1,37 +1,54 @@
 # bueno-run-proxies | SNAP
 
-## Defaults Parameters:
-There are several defaults established in main portion of the run script.
-These include, the name and description of the experiment being performed,
-the path to the SNAP instance, SNAP's input and output file destinations,
-the bueno input file, as well as the destination of the bueno csv report file
-and the variable portions of the run commands. The first two items of the
-run commands (runcmds) control the iterative portion of the script's
-benchmarking proceedure; defining the inclusive range of inputs to be tested.
+<br/>
 
-```Python
-# Default values
-defaults = experiment.CannedCLIConfiguration.Defaults
-defaults.csv_output = './data.csv'
-defaults.description = desc
-defaults.executable = '~/SNAP_build/src/gsnap'
-defaults.input = './experiments/input'
-defaults.name = 'snap'
-defaults.runcmds = (4, 10, 'mpiexec -n %n', 'nidx')
+## Quick Start:
+
+Execute the bueno run script with the default configuration parameters and
+assumed build location of LANL's SN Proxy Application (SNAP) with no
+container.
+```Shell
+$ bueno run -a none -p bueno_snap.py
 ```
 
-## Custom Configuration:
-The default settings outlined above are mirrored in the config file found in
-the experiment directory. Custom configurations should be defined here rather
-than directly in the run script; the config file is consulted during runtime
-and overwrites the default configuration if present.
+<br/>
+
+## Config File:
+Within the experiments directory there is a configuration file for this bueno
+run script. Configuration settings include input and output files for SNAP,
+name, description and experiment executable. Also customizable in this file
+is the iterative run commands controls. Listed in the file as "runcmds", the
+first two items define the inclusive range of numbers to be tested. The second,
+is the command being passed to the terminal with the variable numerical value 
+established in the previous range of numbers. The final item in the config file
+is the additional parameter for SNAP's input and output file.
+
+```
+# Custom bueno runscript for SN Application Proxy (SNAP).
+# --csv-output data.csv
+# --description 'bueno run script for SNAP.'
+# --executable '~/SNAP_build/src/gsnap'
+# --input './experiments/config'
+# --name 'snap'
+# --runcmds "4, 10, 'mpiexec -n %n', 'nidx'"
+{} ./experiments/input ./experiments/output
+```
 
 > Note:
-> 
+> --input is the bueno run script input and not to be confused with SNAP's
+> input file; which is specified in the final line with ./experiments/input
 
-Additionally, there are some options for acquiring the timing table from the
-output file. In the event that the size of the table is modified in future,
-the run script can easily be tweaked to read more or less lines when
+<br/>
+
+## Custom Configuration:
+Modifications to the bueno run script should be defined in the above config
+file rather than directly in bueno_snap.py. While the settings are mirrored
+in the runscript, the input file is consulted at runtime and the defaults are
+overriden with the parameters found in experiments/config.
+
+There are some additional options for acquiring the timing table from the SNAP
+output file. In the event that the size/format of SNAP's data table is modified
+in future, the run script can easily be tweaked to read more or less lines when
 gathering metadata.
 
 ```Python
@@ -45,25 +62,22 @@ end = table_pos + SO_OFFSET + SO_WIDTH
 time_table = lines[start:end]  # isolate table lines
 ```
 
+<br/>
+
 ## Script Execution:
 
-Generic runscript execution, without an application container, follows the 
-procedure outlined in the examples defined in the main readme document.
 ```Shell
-bueno run -a none -p bueno_snap.py
+# Generic, non-containerized application
+$ bueno run -a none -p bueno_snap.py
+
+# With containerized application
+$ bueno run -i ~/bueno-proxies-src/snap/test-snap.tar.gz -p bueno_snap.py
 ```
+
 After execution, the metadata files are stored in the new local snap folder.
 The one created by the custom post action is called: timing-metadata.yaml.
 Additionally, the generated report is saved as: data.csv in the same
 directory.
-
-If the intention is to run the containerized version of the application,
-then the execute command changes slightly to include the tarball created in
-the parallel bueno-proxies-src repository.
-
-```Shell
-bueno run -i ~/bueno-proxies-src/snap/test-snap.tar.gz -p bueno_snap.py
-```
 
 <br/>
 
