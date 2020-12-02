@@ -110,13 +110,13 @@ class Experiment:
 
         updated = []
         for row in lines:
-            if 'npey' in row:
+            if row[2:6] == 'npey':
                 updated.append(F'  npey={dimensions[0]}\n')
-            elif 'npez' in row:
+            elif row[2:6] == 'npez':
                 updated.append(F'  npez={dimensions[1]}\n')
-            elif 'ny' in row:
+            elif row[2:4] == 'ny':
                 updated.append(F'  ny={dimensions[0]}\n')
-            elif 'nz' in row:
+            elif row[2:4] == 'nz':
                 updated.append(F'  nz={dimensions[1]}\n')
             else:
                 updated.append(row)
@@ -154,7 +154,7 @@ class Experiment:
             # No table found.
             if table_pos == -1:
                 logger.log('ERROR: EOF reached before time table found')
-                return
+                exit()
 
             start = table_pos + SO_OFFSET
             end = table_pos + SO_OFFSET + SO_WIDTH
