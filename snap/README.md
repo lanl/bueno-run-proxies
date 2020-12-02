@@ -16,7 +16,7 @@ $ bueno run -a none -p bueno_snap.py
 ## Config File:
 Within the experiments directory there is a configuration file for this bueno
 run script. Configuration settings include input and output files for SNAP,
-name, description and experiment executable. Also customizable in this file
+name, description and experiment executable. Also customisable in this file
 is the iterative run commands controls. Listed in the file as "runcmds", the
 first two items define the inclusive range of numbers to be tested. The second,
 is the command being passed to the terminal with the variable numerical value 
@@ -43,8 +43,8 @@ is the additional parameter for SNAP's input and output file.
 ## Custom Configuration:
 Modifications to the bueno run script should be defined in the above config
 file rather than directly in bueno_snap.py. While the settings are mirrored
-in the runscript, the input file is consulted at runtime and the defaults are
-overriden with the parameters found in experiments/config.
+in the run script, the input file is consulted at run time and the defaults are
+overridden with the parameters found in experiments/config.
 
 There are some additional options for acquiring the timing table from the SNAP
 output file. In the event that the size/format of SNAP's data table is modified
@@ -87,4 +87,4 @@ C19133 [bueno](https://github.com/lanl/bueno)
 <br/>
 
 -------------------------------------------------------------------------------
-Last Modified - 11/30/2020
+Last Modified - 12/1/2020
