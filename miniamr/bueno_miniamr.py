@@ -22,33 +22,47 @@ from bueno.public import utils
 
 
 class Experiment:
+    '''
+    MiniAMR benchmark definition
+    '''
     def __init__(self, config):
-        # The experiment configuration.
+        # The experiment configuration and name.
         self.config = config
-        # Set the experiment's name
+        # Set the experiment's name.
         experiment.name(self.config.args.name)
+
         # Data container.
         self.data = {
             'commands': list(),
             'numpe': list(),
-            'tottime': list(),
+            'tottime': list(),  # total time
             'cgh1': list(),
             'cgl2': list()
         }
+
         # Emit program configuration to terminal.
         self.emit_conf()
         # Add assets to collection of metadata.
         self.add_assets()
 
     def emit_conf(self):
+        '''
+        Emit program configuration to terminal
+        '''
         pcd = dict()
         pcd['Program'] = vars(self.config.args)
         utils.yamlp(pcd, 'Program')
 
     def add_assets(self):
+        '''
+        Add additional metadata assets
+        '''
         metadata.add_asset(metadata.FileAsset(self.config.args.input))
 
     def post_action(self, **kwargs):
+        '''
+        Custom post experiment action
+        '''
         cmd = kwargs.pop('command')
         tet = kwargs.pop('exectime')
 
@@ -78,6 +92,9 @@ class Experiment:
                 continue
 
     def run(self, genspec):
+        '''
+        Experiement execution definition
+        '''
         logger.emlog('# Starting Runs...')
         # Generate the run commands for the given experiment.
         rcmd = self.config.args.runcmds
@@ -90,6 +107,9 @@ class Experiment:
             container.prun(prun, appargs, postaction=self.post_action)
 
     def report(self):
+        '''
+        Post experiment report creation
+        '''
         logger.emlog(F'# {experiment.name()} Report')
 
         header = [
@@ -124,8 +144,12 @@ class Experiment:
 
 
 def main(argv):
+    '''
+    Main program
+    '''
     # Program description
     desc = 'bueno run script for miniAMR experiments'
+
     # Default values
     defaults = experiment.CannedCLIConfiguration.Defaults
     defaults.csv_output = 'data.csv'
@@ -134,8 +158,10 @@ def main(argv):
     defaults.input = 'experiments/quick'
     defaults.name = 'miniAMR'
     defaults.runcmds = (0, 2, 'srun -n %n', 'nidx + 1')
+
     # Initial configuration
     config = experiment.CannedCLIConfiguration(desc, argv, defaults)
+
     # Parse provided arguments
     config.parseargs()
     for genspec in experiment.readgs(config.args.input, config):
