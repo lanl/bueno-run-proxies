@@ -12,6 +12,7 @@ Bueno run script for the SN Application Proxy (SNAP).
 import re
 import io
 import csv
+import sys
 import typing
 
 from bueno.public import container
@@ -154,7 +155,7 @@ class Experiment:
             # No table found.
             if table_pos == -1:
                 logger.log('ERROR: EOF reached before time table found')
-                exit()
+                sys.exit()
 
             start = table_pos + SO_OFFSET
             end = table_pos + SO_OFFSET + SO_WIDTH
