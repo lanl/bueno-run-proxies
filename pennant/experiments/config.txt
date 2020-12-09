@@ -5,4 +5,4 @@
 # --input './experiments/config'
 # --name 'snap'
 # --runcmds "4, 10, 'mpiexec -n %n', 'nidx'"
-{}
+{} ./experiments/nohsmall/nohsmall.pnt ./experiments/nohsmall/output.out

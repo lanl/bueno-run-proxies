@@ -35,13 +35,13 @@ class AddArgsAction(experiment.CLIAddArgsAction):
         cliconfig.argparser.add_argument(
             '--pinfile',
             help="pennant input file",
-            default='./experiments/input'
+            default='./experiments/nohsmall/nohsmall.pnt'
         )
 
         cliconfig.argparser.add_argument(
             '--poutfile',
             help="pennant output file",
-            default='./experiments/output'
+            default='./experiments/nohsmall/output.out'
         )
 
 
