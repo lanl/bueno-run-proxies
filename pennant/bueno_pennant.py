@@ -10,11 +10,36 @@ Bueno run script for the unstructured mesh physics mini-app,
 PENNANT
 '''
 
+import re
+import sys
+
 from bueno.public import container
 from bueno.public import experiment
 from bueno.public import logger
 from bueno.public import metadata
 from bueno.public import utils
+
+
+# pylint: disable=too-few-public-methods
+class AddArgsAction(experiment.CLIAddArgsAction):
+    '''
+    Handle custom argument processing
+    '''
+    def __call__(self, cliconfig: experiment.CLIConfiguration) -> None:
+        '''
+        New argument definitions
+        '''
+        cliconfig.argparser.add_argument(
+            '--pinfile',
+            help="pennant input file",
+            default='./experiments/input'
+        )
+
+        cliconfig.argparser.add_argument(
+            '--poutfile',
+            help="pennant output file",
+            default='./experiments/output'
+        )
 
 
 class Experiment:
@@ -28,8 +53,13 @@ class Experiment:
         experiment.name(config.args.name)
         self.config = config
 
+        # PENNANT input & output files
+        self.pinfile = config.args.pinfile
+        self.poutfile = config.args.poutfile
+
         self.data = {
-            'command': list()
+            'command': list(),
+            'results': list()
         }
 
         # Emit program config to terminal.
@@ -49,16 +79,61 @@ class Experiment:
         Select additional assets to copy
         '''
         metadata.add_asset(metadata.FileAsset(self.config.args.input))
-        # TODO: select additional assets
+        metadata.add_asset(metadata.FileAsset(self.pinfile))
 
     def post_action(self, **kwargs):
         '''
         Post experiment iteration action
         '''
         logger.log('# Starting Post Action...')
-
         cmd = kwargs.pop('command')
+
+        # Record command used in iteration.
         self.data['command'].append(cmd)
+
+        # Record timing data from PENNANT output.
+        self.parse_poutfile()
+        
+    def parse_poutfile(self):
+        '''
+        Parse timing results information from PENNANT output file.
+        '''
+        # Open output file.
+        lines = []
+        with open(self.poutfile, 'rt') as output:
+            lines = output.readlines()
+
+        # Search for end of run data.
+        pos = -1
+        for pos, line in enumerate(lines):
+            if line == 'Run complete\n':
+                break
+
+        # No data found.
+        if pos == -1:
+            logger.log('ERROR: EOF reached before end of run data found')
+            sys.exit()
+
+        timing = lines[pos + 1 : pos +6]
+
+        # Isolate & format end of run data.
+        results = []
+        for row in timing:
+            items = row.split(',')
+            for item in items:
+                if '*' in item or item == '\n':
+                    continue  # Skip empty or decorative lines.
+
+                # Trim whitespace.
+                item = re.sub(r'[ ]*\=[ ]+', ':', item)
+                item = item.strip()
+
+                # Remove unecessary characters.
+                item = re.sub(r'[()]', '', item)         
+                results.append(item.split(':')[1]) # discard label
+
+        # Append iteration results to Experiment data
+        self.data['results'].append(results)
 
     def run(self, genspec):
         '''
@@ -91,7 +166,7 @@ def main(argv):
     defaults = experiment.CannedCLIConfiguration.Defaults
     defaults.name = 'pennant'
     defaults.description = desc
-    defaults.input = 'experiments/input.txt'
+    defaults.input = 'experiments/config.txt'
     defaults.executable = '/PENNANT/pennant'
     defaults.runcmds = (0, 2, 'mpicc -n %n', 'nidx + 1')
     defaults.csv_output = 'data.csv'
