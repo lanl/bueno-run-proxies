@@ -1,0 +1,8 @@
+# Custom bueno runscript for PENNANT.
+# --csv-output data.csv
+# --description 'bueno run script for PENNANT.'
+# --executable '~/SNAP_build/src/gsnap'
+# --input './experiments/config'
+# --name 'snap'
+# --runcmds "4, 10, 'mpiexec -n %n', 'nidx'"
+{}
