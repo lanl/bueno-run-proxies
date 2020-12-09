@@ -11,7 +11,10 @@ PENNANT
 '''
 
 import re
+import io
+import csv
 import sys
+import typing
 
 from bueno.public import container
 from bueno.public import experiment
@@ -46,7 +49,7 @@ class Experiment:
     '''
     PENNANT benchmark definition
     '''
-    def __init__(self, config: experiment.CLIConfiguration):
+    def __init__(self, config: experiment.CLIConfiguration) -> None:
         '''
         Experiment configuration.
         '''
@@ -57,7 +60,7 @@ class Experiment:
         self.pinfile = config.args.pinfile
         self.poutfile = config.args.poutfile
 
-        self.data = {
+        self.data: typing.Dict[str, list] = {
             'command': list(),
             'results': list()
         }
@@ -66,7 +69,7 @@ class Experiment:
         self.emit_conf()
         self.add_assets()
 
-    def emit_conf(self):
+    def emit_conf(self) -> None:
         '''
         Emit configuration to terminal
         '''
@@ -74,14 +77,14 @@ class Experiment:
         pcd['Program'] = vars(self.config.args)
         utils.yamlp(pcd, 'Program')
 
-    def add_assets(self):
+    def add_assets(self) -> None:
         '''
         Select additional assets to copy
         '''
         metadata.add_asset(metadata.FileAsset(self.config.args.input))
         metadata.add_asset(metadata.FileAsset(self.pinfile))
 
-    def post_action(self, **kwargs):
+    def post_action(self, **kwargs: typing.Dict[str, str]) -> None:
         '''
         Post experiment iteration action
         '''
@@ -93,8 +96,8 @@ class Experiment:
 
         # Record timing data from PENNANT output.
         self.parse_poutfile()
-        
-    def parse_poutfile(self):
+
+    def parse_poutfile(self) -> None:
         '''
         Parse timing results information from PENNANT output file.
         '''
@@ -114,7 +117,7 @@ class Experiment:
             logger.log('ERROR: EOF reached before end of run data found')
             sys.exit()
 
-        timing = lines[pos + 1 : pos +6]
+        timing = lines[pos + 1: pos + 6]
 
         # Isolate & format end of run data.
         results = []
@@ -129,13 +132,13 @@ class Experiment:
                 item = item.strip()
 
                 # Remove unecessary characters.
-                item = re.sub(r'[()]', '', item)         
-                results.append(item.split(':')[1]) # discard label
+                item = re.sub(r'[()]', '', item)
+                results.append(item.split(':')[1])  # discard label
 
         # Append iteration results to Experiment data
         self.data['results'].append(results)
 
-    def run(self, genspec):
+    def run(self, genspec: str) -> None:
         '''
         Experiment iterations definition
         '''
@@ -151,14 +154,38 @@ class Experiment:
         for prun in pruns:
             logger.log('')
             container.prun(prun, appargs, postaction=self.post_action)
-    
-    def report(self):
+
+    def report(self) -> None:
+        '''
+        Generate csv report from test iterations.
+        '''
         logger.emlog(F'# {experiment.name()} Report')
-        
-        # TODO: Generate report
+
+        # Setup table.
+        table = utils.Table()
+        sio = io.StringIO(newline=None)
+        dataraw = csv.writer(sio)
+
+        header = ['cycle', 'cstop', 'time', 'tstop', 'hydro cycle']
+        dataraw.writerow(header)
+        table.addrow(header)
+
+        # Populate table.
+        for entry in self.data['results']:
+            dataraw.writerow(entry)
+            table.addrow(entry)
+
+        # Write table to csv & display to terminal.
+        csvname = self.config.csv_output
+        metadata.add_asset(metadata.StringIOAsset(sio, csvname))
+        table.emit()
+        logger.log('')
 
 
-def main(argv):
+def main(argv: typing.List[str]) -> None:
+    '''
+    Setup and start experiment.
+    '''
     # Program description.
     desc = 'bueno run script for PENNANT experiments.'
 
@@ -182,4 +209,3 @@ def main(argv):
         exp.report()
 
 # vim: ft=python ts=4 sts=4 sw=4 expandtab
-    
