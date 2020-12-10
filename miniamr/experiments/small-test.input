@@ -1,3 +1,0 @@
-# --name miniAMR-small-test
-# --runcmds "0, 2, 'srun -n %n', 'nidx + 1'"
-{}
