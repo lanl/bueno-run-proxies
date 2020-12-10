@@ -166,12 +166,13 @@ class Experiment:
         sio = io.StringIO(newline=None)
         dataraw = csv.writer(sio)
 
-        header = ['cycle', 'cstop', 'time', 'tstop', 'hydro cycle']
+        header = ['Cycle', 'Cstop', 'Time', 'Tstop', 'Hydro Cycle', 'Command']
         dataraw.writerow(header)
         table.addrow(header)
 
         # Populate table.
-        for entry in self.data['results']:
+        for index, entry in enumerate(self.data['results']):
+            entry.append(self.data['commands'][index])
             dataraw.writerow(entry)
             table.addrow(entry)
 
