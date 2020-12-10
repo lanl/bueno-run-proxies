@@ -68,9 +68,10 @@ class Experiment:
         self.snap_input = self.config.args.snapinfile
         self.snap_output = self.config.args.snapoutfile
 
-        self.cmd = ''  # Assigned and retained during post action.
-
-        self.data: typing.Dict[str, str] = {}
+        self.data: typing.Dict[str, list] = {
+            'commands': list(),
+            'results': list()
+        }
 
         self.emit_conf()  # Emit config to terminal
         self.add_assets()  # Copy input file to metadata record
@@ -135,7 +136,7 @@ class Experiment:
 
         # Record command used.
         # Process snap output.
-        self.cmd = str(kwargs['command'])
+        self.data['commands'].append(str(kwargs['command']))
         self.parse_snapfile()
 
     def parse_snapfile(self) -> None:
@@ -160,24 +161,22 @@ class Experiment:
             start = table_pos + SO_OFFSET
             end = table_pos + SO_OFFSET + SO_WIDTH
             time_table = lines[start:end]  # Isolate table lines
-            data = []
+            results = []
 
             # Format data string for yaml file
             for row in time_table:
                 row = row.strip()
-                row = re.sub(r'[ ]{2,}', ': ', row)
+                row = re.sub(r'[ ]{2,}', ':', row)
 
                 if row == '':  # Skip empty
                     continue
 
                 # Else append formatted item.
                 logger.log(F'[data] {row}')
-                data.append(row)
+                results.append(row.split(':')[1])
 
             # Add items to metadata dictionary.
-            for item in data:
-                label, val = item.split(':')
-                self.data[label] = val
+            self.data['results'].append(results)
 
             # Save dictionary data.
             logger.log('\nAdding metadata file...')
@@ -219,25 +218,21 @@ class Experiment:
         table = utils.Table()
         sio = io.StringIO(newline=None)
         dataraw = csv.writer(sio)
-        dataraw.writerow([F'## {self.config.args.description}'])
 
-        # Add generic data to csv.
-        dataraw.writerow(['## Cmd Executed:'])
-        dataraw.writerow([self.cmd])
+        # Column header
+        header = [
+            'Parallel Setup', 'Input', 'Setup', 'Solve', 'Parameter Setup',
+            'Outer Source', 'Inner Iteration', 'Inner Source',
+            'Transport Sweet', 'Inner Misc Ops', 'Solution Misc Ops',
+            'Output', 'Total Execution Time', 'Grind Time', 'Command'
+        ]
+        dataraw.writerow(header)
+        table.addrow(header)
 
-        # Copy time Summary Data.
-        header = '## Timing Summary:'
-        dataraw.writerow([header])
-        table.addrow([header, ''])
-
-        columns = ['Code Section', 'Time (s)']
-        dataraw.writerow(columns)
-        table.addrow(columns)
-
-        for label in self.data:
-            value = self.data[label]
-            dataraw.writerow([label, value])
-            table.addrow([label, value])
+        for index, entry in enumerate(self.data['results']):
+            entry.append(self.data['commands'][index])
+            dataraw.writerow(entry)
+            table.addrow(entry)
 
         csvfname = self.csv_output
         metadata.add_asset(metadata.StringIOAsset(sio, csvfname))
