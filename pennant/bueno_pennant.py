@@ -195,8 +195,8 @@ def main(argv: typing.List[str]) -> None:
     defaults.name = 'pennant'
     defaults.description = desc
     defaults.input = 'experiments/config.txt'
-    defaults.executable = '/PENNANT/pennant'
-    defaults.runcmds = (0, 2, 'mpicc -n %n', 'nidx + 1')
+    defaults.executable = '~/PENNANT/build/pennant'
+    defaults.runcmds = (0, 2, 'mpirun -n %n', 'nidx + 1')
     defaults.csv_output = 'data.csv'
 
     # Compile and parse configuration.
