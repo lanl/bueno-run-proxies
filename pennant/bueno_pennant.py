@@ -38,13 +38,6 @@ class AddArgsAction(experiment.CLIAddArgsAction):
             default='./experiments/nohsmall/nohsmall.pnt'
         )
 
-        cliconfig.argparser.add_argument(
-            '--poutfile',
-            help="pennant output file",
-            default='./experiments/nohsmall/output.out'
-        )
-
-
 class Experiment:
     '''
     PENNANT benchmark definition
@@ -56,9 +49,8 @@ class Experiment:
         experiment.name(config.args.name)
         self.config = config
 
-        # PENNANT input & output files
+        # PENNANT input file
         self.pinfile = config.args.pinfile
-        self.poutfile = config.args.poutfile
 
         self.data: typing.Dict[str, list] = {
             'command': list(),
@@ -94,21 +86,16 @@ class Experiment:
         # Record command used in iteration.
         self.data['command'].append(cmd)
 
-        # Record timing data from PENNANT output.
-        self.parse_poutfile()
+        # Record timing data from PENNANT terminal output.
+        self.parse_output(kwargs.pop('output'))
 
-    def parse_poutfile(self) -> None:
+    def parse_output(self, out1) -> None:
         '''
         Parse timing results information from PENNANT output file.
         '''
-        # Open output file.
-        lines = []
-        with open(self.poutfile, 'rt') as output:
-            lines = output.readlines()
-
         # Search for end of run data.
         pos = -1
-        for pos, line in enumerate(lines):
+        for pos, line in enumerate(out1):
             if line == 'Run complete\n':
                 break
 
@@ -117,7 +104,7 @@ class Experiment:
             logger.log('ERROR: EOF reached before end of run data found')
             sys.exit()
 
-        timing = lines[pos + 1: pos + 6]
+        timing = out1[pos + 1: pos + 6]
 
         # Isolate & format end of run data.
         results = []
@@ -194,13 +181,14 @@ def main(argv: typing.List[str]) -> None:
     defaults = experiment.CannedCLIConfiguration.Defaults
     defaults.name = 'pennant'
     defaults.description = desc
-    defaults.input = 'experiments/config.txt'
+    defaults.input = './experiments/config.txt'
     defaults.executable = '~/PENNANT/build/pennant'
-    defaults.runcmds = (0, 2, 'mpirun -n %n', 'nidx + 1')
+    defaults.runcmds = (2, 2, 'mpirun -n %n', 'nidx + 1')
     defaults.csv_output = 'data.csv'
 
     # Compile and parse configuration.
     config = experiment.CannedCLIConfiguration(desc, argv, defaults)
+    config.addargs(AddArgsAction)
     config.parseargs()
 
     for genspec in experiment.readgs(config.args.input, config):

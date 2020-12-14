@@ -1,8 +1,8 @@
 # Custom bueno runscript for PENNANT.
-# --csv-output data.csv
+# --csv-output 'data.csv'
 # --description 'bueno run script for pennant.'
 # --executable '~/PENNANT/build/pennant'
 # --input './experiments/config'
 # --name 'snap'
-# --runcmds "4, 10, 'mpiexec -n %n', 'nidx'"
-{} ./experiments/nohsmall/nohsmall.pnt ./experiments/nohsmall/output.out
+# --runcmds "2, 2, 'mpirun -n %n', 'nidx + 1'"
+{} ./experiments/nohsmall/nohsmall.pnt
