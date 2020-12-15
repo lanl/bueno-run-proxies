@@ -53,7 +53,7 @@ class Experiment:
         self.pinfile = config.args.pinfile
 
         self.data: typing.Dict[str, list] = {
-            'command': list(),
+            'commands': list(),
             'results': list()
         }
 
@@ -84,7 +84,7 @@ class Experiment:
         cmd = kwargs.pop('command')
 
         # Record command used in iteration.
-        self.data['command'].append(cmd)
+        self.data['commands'].append(cmd)
 
         # Record timing data from PENNANT terminal output.
         self.parse_output(kwargs.pop('output'))
@@ -97,11 +97,12 @@ class Experiment:
         pos = -1
         for pos, line in enumerate(out1):
             if line == 'Run complete\n':
+                print('Found runtime table!')
                 break
 
         # No data found.
         if pos == -1:
-            logger.log('ERROR: EOF reached before end of run data found')
+            logger.log('ERROR: No run data found')
             sys.exit()
 
         timing = out1[pos + 1: pos + 6]
@@ -164,7 +165,7 @@ class Experiment:
             table.addrow(entry)
 
         # Write table to csv & display to terminal.
-        csvname = self.config.csv_output
+        csvname = self.config.args.csv_output
         metadata.add_asset(metadata.StringIOAsset(sio, csvname))
         table.emit()
         logger.log('')

@@ -2,7 +2,7 @@
 # --csv-output 'data.csv'
 # --description 'bueno run script for pennant.'
 # --executable '~/PENNANT/build/pennant'
-# --input './experiments/config'
-# --name 'snap'
-# --runcmds "2, 2, 'mpirun -n %n', 'nidx + 1'"
+# --input './experiments/config.txt'
+# --name 'pennant'
+# --runcmds "0, 1, 'mpirun -n %n', 'nidx + 1'"
 {} ./experiments/nohsmall/nohsmall.pnt
