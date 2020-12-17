@@ -25,7 +25,7 @@ options present in config include the name, description, executable, input
 # --executable '~/PENNANT/build/pennant'
 # --input './experiments/config'
 # --name 'snap'
-# --runcmds "4, 10, 'mpirun -n %n', 'nidx + 1'"
+# --runcmds "0, 1, 'mpirun -n %n', 'nidx + 1'"
 {} ./experiments/nohsmall/nohsmall.pnt ./experiments/nohsmall/output.out
 ```
 
@@ -49,7 +49,8 @@ bueno_pennant.py
 
 After sucessful run script execution, the csv report of the timing results
 can be found within the new pennant folder alongside other collected metadata
-assets
+assets. Recording the Cycle, Cstop, Time Tstop and command used for each
+iteration of the test.
 
 <br/>
 
@@ -59,4 +60,4 @@ C19133 [bueno](https://github.com/lanl/bueno)
 <br/>
 
 -------------------------------------------------------------------------------
-Last Modified - 12/10/2020
+Last Modified - 12/17/2020
