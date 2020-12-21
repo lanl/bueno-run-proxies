@@ -25,8 +25,8 @@ options present in config include the name, description, executable, input
 # --executable '~/PENNANT/build/pennant'
 # --input './experiments/config'
 # --name 'snap'
-# --runcmds "0, 1, 'mpirun -n %n', 'nidx + 1'"
-{} ./experiments/nohsmall/nohsmall.pnt ./experiments/nohsmall/output.out
+# --runcmds "0, 5, 'mpirun -n %n', 'nidx + 1'"
+{} ./experiments/nohsmall/nohsmall.pnt
 ```
 
 > Note:

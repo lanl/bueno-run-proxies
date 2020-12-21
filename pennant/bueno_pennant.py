@@ -38,6 +38,7 @@ class AddArgsAction(experiment.CLIAddArgsAction):
             default='./experiments/nohsmall/nohsmall.pnt'
         )
 
+
 class Experiment:
     '''
     PENNANT benchmark definition
@@ -57,7 +58,7 @@ class Experiment:
             'results': list()
         }
 
-        # Emit program config to terminal.
+        # Emit program config to terminal & collected assets.
         self.emit_conf()
         self.add_assets()
 
@@ -89,9 +90,9 @@ class Experiment:
         # Record timing data from PENNANT terminal output.
         self.parse_output(kwargs.pop('output'))
 
-    def parse_output(self, out1) -> None:
+    def parse_output(self, out1: typing.List[str]) -> None:
         '''
-        Parse timing results information from PENNANT output file.
+        Parse timing results information from PENNANT terminal output.
         '''
         # Search for end of run data.
         pos = -1
@@ -100,14 +101,15 @@ class Experiment:
                 print('Found runtime table!')
                 break
 
-        # No data found.
+        # No data found, stop test.
         if pos == -1:
-            logger.log('ERROR: No run data found')
+            logger.log('ERROR: No post-run data found')
             sys.exit()
 
+        # Isolate terminal lines containing timing details.
         timing = out1[pos + 1: pos + 6]
 
-        # Isolate & format end of run data.
+        # Format end of run data.
         results = []
         for row in timing:
             items = row.split(',')
@@ -121,7 +123,7 @@ class Experiment:
 
                 # Remove unecessary characters.
                 item = re.sub(r'[()]', '', item)
-                results.append(item.split(':')[1])  # discard label
+                results.append(item.split(':')[1])  # Discard label
 
         # Append iteration results to Experiment data
         self.data['results'].append(results)
@@ -145,7 +147,7 @@ class Experiment:
 
     def report(self) -> None:
         '''
-        Generate csv report from test iterations.
+        Generate csv report from run iterations.
         '''
         logger.emlog(F'# {experiment.name()} Report')
 
