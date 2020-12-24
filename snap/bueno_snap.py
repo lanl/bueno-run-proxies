@@ -229,6 +229,7 @@ class Experiment:
         dataraw.writerow(header)
         table.addrow(header)
 
+        # Populate csv table.
         for index, entry in enumerate(self.data['results']):
             entry.append(self.data['commands'][index])
             dataraw.writerow(entry)
