@@ -11,20 +11,26 @@ $ bueno run -a none -p bueno_pennant.py
 
 <br/>
 
-## Config File:
+## Experiment Configuration:
 In the experiments directory, the config file outlines the execution parameters
 of the bueno run script. Modifications to the execution of this experiment
 should take place in this file rather than in the main body of the run script
 as the default values defined there are overwritten by the config file. The
 options present in config include the name, description, executable, input 
 (config) and csv output of the experiment.
+
+Customizing the experiment should be performed at the config file level.
+Changes to the run commands (runcmds) impact what level of parallel processing
+occurs in pennant as well as how many iterations of testing are performed. The
+performance of each is recorded in a new folder sharing the experiment's name,
+dated and numbered for review.
 ```
 # Custom bueno run script for PENNANT.
 # --csv-output data.csv
 # --description 'bueno run script for pennant.'
 # --executable '~/PENNANT/build/pennant'
 # --input './experiments/config'
-# --name 'snap'
+# --name 'pennant'
 # --runcmds "0, 5, 'mpirun -n %n', 'nidx + 1'"
 {} ./experiments/nohsmall/nohsmall.pnt
 ```
@@ -43,14 +49,13 @@ options present in config include the name, description, executable, input
 $ bueno run -a none -p bueno_pennant.py
 
 # With containerized application
-$ bueno run -i ~/bueno-proxies-src/pennant/test-pennant.tar.gz -p 
-bueno_pennant.py
+$ bueno run -i ~/bueno-proxies-src/pennant/test-pennant.tar.gz -p bueno_pennant.py
 ```
 
 After sucessful run script execution, the csv report of the timing results
 can be found within the new pennant folder alongside other collected metadata
-assets. Recording the Cycle, Cstop, Time Tstop and command used for each
-iteration of the test.
+assets. Recording the Cycle, Cstop, Time Tstop and terminal command used for
+each iteration of the test.
 
 <br/>
 
