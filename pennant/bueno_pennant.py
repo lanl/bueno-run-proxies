@@ -24,13 +24,14 @@ from bueno.public import utils
 
 
 # pylint: disable=too-few-public-methods
+# mypy: allow-subclassing-any
 class AddArgsAction(experiment.CLIAddArgsAction):
     '''
-    Handle custom argument processing
+    Handle custom argument processing.
     '''
     def __call__(self, cliconfig: experiment.CLIConfiguration) -> None:
         '''
-        New argument definitions
+        New argument definitions.
         '''
         cliconfig.argparser.add_argument(
             '--pinfile',
@@ -50,10 +51,10 @@ class Experiment:
         experiment.name(config.args.name)
         self.config = config
 
-        # PENNANT input file
+        # PENNANT input file.
         self.pinfile = config.args.pinfile
 
-        self.data: typing.Dict[str, list] = {
+        self.data: typing.Dict[str, typing.Any] = {
             'commands': list(),
             'results': list()
         }
@@ -64,7 +65,7 @@ class Experiment:
 
     def emit_conf(self) -> None:
         '''
-        Emit configuration to terminal
+        Emit configuration to terminal.
         '''
         pcd = dict()
         pcd['Program'] = vars(self.config.args)
@@ -72,14 +73,14 @@ class Experiment:
 
     def add_assets(self) -> None:
         '''
-        Select additional assets to copy
+        Select additional assets to backup.
         '''
         metadata.add_asset(metadata.FileAsset(self.config.args.input))
         metadata.add_asset(metadata.FileAsset(self.pinfile))
 
     def post_action(self, **kwargs: typing.Dict[str, str]) -> None:
         '''
-        Post experiment iteration action
+        Post experiment iteration action.
         '''
         logger.log('# Starting Post Action...')
         cmd = kwargs.pop('command')
@@ -88,7 +89,7 @@ class Experiment:
         self.data['commands'].append(cmd)
 
         # Record timing data from PENNANT terminal output.
-        self.parse_output(kwargs.pop('output'))
+        self.parse_output(list(kwargs.pop('output')))
 
     def parse_output(self, out1: typing.List[str]) -> None:
         '''
@@ -103,7 +104,7 @@ class Experiment:
 
         # No data found, stop test.
         if pos == -1:
-            logger.log('ERROR: No post-run data found')
+            logger.log('ERROR: No post-run data found!')
             sys.exit()
 
         # Isolate terminal lines containing timing details.
@@ -125,12 +126,12 @@ class Experiment:
                 item = re.sub(r'[()]', '', item)
                 results.append(item.split(':')[1])  # Discard label
 
-        # Append iteration results to Experiment data
+        # Append iteration results to Experiment data.
         self.data['results'].append(results)
 
     def run(self, genspec: str) -> None:
         '''
-        Experiment iterations definition
+        Experiment iterations definition.
         '''
         logger.log('# Starting Runs...')
 
@@ -195,7 +196,7 @@ def main(argv: typing.List[str]) -> None:
     config.parseargs()
 
     for genspec in experiment.readgs(config.args.input, config):
-        # Update config after each iteration
+        # Update config after each iteration.
         exp = Experiment(config)
         exp.run(genspec)
         exp.report()
