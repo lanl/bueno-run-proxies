@@ -1,16 +1,16 @@
 ! Input from namelist
 &invar
-  npey=2
+  npey=5
   npez=2
   ichunk=2
   nthreads=2
   nnested=1
   ndimen=3
-  nx=6
+  nx=4
   lx=0.6
-  ny=6
+  ny=5
   ly=0.6
-  nz=6
+  nz=2
   lz=0.6
   nmom=1
   nang=10
