@@ -102,7 +102,7 @@ class Experiment:
         # Fetch volume for decomposition from command execution.
         # Perform factor evaluation.
         volume = int(str(kwargs["command"]).split(" ")[2])
-        dimensions = experiment.evaluate_factors(volume, 2)
+        dimensions = experiment.factorize(volume, 2)
         logger.log('Factor calculated!')
 
         # Parse snap input file to list
