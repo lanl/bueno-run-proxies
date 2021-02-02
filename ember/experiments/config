@@ -1,0 +1,7 @@
+# Custom bueno runscript for Ember.
+# --csv-output data.csv
+# --description 'bueno run script for Ember.'
+# --executable '~/ember/mpi/halo3d/halo3d'
+# --name 'ember'
+# --runcmds "20, 25, 'mpirun -n %n', 'nidx'"
+{} -pex {} -pey {} -pez {} -nx 8 -ny 8 -nz 8 -iterations 100 -vars 8 -sleep 100
