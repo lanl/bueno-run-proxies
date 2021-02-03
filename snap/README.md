@@ -5,24 +5,26 @@
 ## Quick Start:
 
 Execute the bueno run script with the default configuration parameters and
-assumed build location of LANL's SN Proxy Application (SNAP) with no
-container.
+assumed build location of LANL's SN Proxy Application
+([SNAP](https://github.com/lanl/SNAP)).
 ```Shell
+# Generic, non-containerized application
 $ bueno run -a none -p bueno_snap.py
+
+# With containerized application
+$ bueno run -i ~/bueno-proxies-src/snap/test-snap.tar.gz -p bueno_snap.py
 ```
 
 <br/>
 
-## Config File:
-Within the experiments directory there is a configuration file for this bueno
-run script. Configuration settings include input and output files for SNAP,
-name, description and experiment executable. Also customisable in this file
-is the iterative run commands controls. Listed in the file as "runcmds", the
-first two items define the inclusive range of numbers to be tested. The second,
-is the command being passed to the terminal with the variable numerical value 
-established in the previous range of numbers. The final item in the config file
-is the additional parameter for SNAP's input and output file.
+## Experiment Configuration:
 
+Experiment configuration can be modified in experiments/config. Settings
+include input and output files for SNAP as well as the location of the SNAP
+executable. Also customizable in this file are the iterative run commands.
+The run commands define the inclusive range of numbers to be tested, the
+format of the command being passed to the terminal. It's in this final item
+that SNAP's input and output file is defined.
 ```
 # Custom bueno runscript for SN Application Proxy (SNAP).
 # --csv-output data.csv
@@ -34,22 +36,30 @@ is the additional parameter for SNAP's input and output file.
 {} ./experiments/input ./experiments/output
 ```
 
-> Note:
-> --input is the bueno run script input and not to be confused with SNAP's
-> input file; which is specified in the final line with ./experiments/input
+> ### Note: <br/>
+> The --input flag is the bueno run script config file and not to be confused
+> with SNAP's input file; which is specified in the final line with
+> ./experiments/input <br/> <br/>
+> If you change the destination of either of SNAP's files, the configuration
+> flags will also need to be set/updated:
+> <br/> # --snapinfile './experiments/new_input'
+> <br/> # --snapoutfile './experiments/new_output'
+> <br/> {} ./experiments/new_input ./experiments_new_output
 
 <br/>
 
-## Custom Configuration:
-Modifications to the bueno run script should be defined in the above config
-file rather than directly in bueno_snap.py. While the settings are mirrored
-in the run script, the input file is consulted at run time and the defaults are
-overridden with the parameters found in experiments/config.
+## Data Acquisition:
 
-There are some additional options for acquiring the timing table from the SNAP
-output file. In the event that the size/format of SNAP's data table is modified
-in future, the run script can easily be tweaked to read more or less lines when
-gathering metadata.
+To reiterate, modifications to the bueno run script should be defined in the
+above config file rather than directly in bueno_snap.py. While the settings
+are mirrored in the run script, the input file is consulted at run time and
+the defaults are overridden with the parameters found in experiments/config.
+
+However, there are some additional options that can be modified that pertain
+to acquiring the timing table from the SNAP output file. Should more or
+alternative data found in SNAP's output file be the subject of interest, the
+run script can easily be tweaked to read more or less lines when gathering
+data.
 
 ```Python
 # snap output table variables
@@ -64,20 +74,13 @@ time_table = lines[start:end]  # isolate table lines
 
 <br/>
 
-## Script Execution:
+## Post Analysis:
 
-```Shell
-# Generic, non-containerized application
-$ bueno run -a none -p bueno_snap.py
-
-# With containerized application
-$ bueno run -i ~/bueno-proxies-src/snap/test-snap.tar.gz -p bueno_snap.py
-```
-
-After execution, the metadata files are stored in the new local snap folder.
-The one created by the custom post action is called: timing-metadata.yaml.
-Additionally, the generated report is saved as: data.csv in the same
-directory.
+After execution, the metadata files are stored in the new directory, the name
+of which is determined by the experiment name flag in config. Exploring within
+each experiment result is saved in a time stamped and numbered directory. The
+run script's post action creates several files containing information for post
+analysis: timing-metadata.yaml and data.csv among them.
 
 <br/>
 
@@ -87,4 +90,4 @@ C19133 [bueno](https://github.com/lanl/bueno)
 <br/>
 
 -------------------------------------------------------------------------------
-Last Modified - 12/24/2020
+Last Modified - 02/03/2021
