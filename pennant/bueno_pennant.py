@@ -1,5 +1,6 @@
 #
-# Written by Jacob Dickens, Dec-2020
+# Copyright (c) 2019-2021 Triad National Security, LLC
+#                         All rights reserved.
 #
 # This file is part of the bueno project. See the LICENSE file at the
 # top-level directory of this distribution for more information.
