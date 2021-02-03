@@ -12,7 +12,7 @@ assumed build location of LANL's SN Proxy Application
 $ bueno run -a none -p bueno_snap.py
 
 # With containerized application
-$ bueno run -i ~/bueno-proxies-src/snap/test-snap.tar.gz -p bueno_snap.py
+$ bueno run -i /path/to/container/image.tar.gz -p bueno_snap.py
 ```
 
 <br/>
@@ -86,8 +86,3 @@ analysis: timing-metadata.yaml and data.csv among them.
 
 ### Los Alamos National Laboratory Code Release
 C19133 [bueno](https://github.com/lanl/bueno)
-
-<br/>
-
--------------------------------------------------------------------------------
-Last Modified - 02/03/2021

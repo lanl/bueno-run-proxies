@@ -11,7 +11,7 @@ assumed build location of [PENNANT](https://github.com/lanl/PENNANT).
 $ bueno run -a none -p bueno_pennant.py
 
 # With containerized application
-$ bueno run -i ~/bueno-proxies-src/pennant/test-pennant.tar.gz -p bueno_pennant.py
+$ bueno run -i /path/to/container/image.tar.gz -p bueno_pennant.py
 ```
 
 <br/>
@@ -74,8 +74,3 @@ information for post analysis: data.csv among them.
 
 ## Los Alamos National Laboratory Code Release
 C19133 [bueno](https://github.com/lanl/bueno)
-
-<br/>
-
--------------------------------------------------------------------------------
-Last Modified - 02/03/2021
