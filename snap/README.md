@@ -58,7 +58,7 @@ the defaults are overridden with the parameters found in experiments/config.
 However, there are some additional options that can be modified that pertain
 to acquiring the timing table from the SNAP output file. Should more or
 alternative data found in SNAP's output file be the subject of interest, the
-run script can easily be tweaked to read more or less lines when gathering
+run script can easily be modified to read more or less lines when gathering
 data.
 
 ```Python
