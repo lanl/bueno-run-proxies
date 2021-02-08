@@ -22,11 +22,6 @@ from bueno.public import metadata
 from bueno.public import utils
 
 
-# SNAP output table variables.
-SO_OFFSET = 5
-SO_WIDTH = 15
-
-
 # pylint: disable=too-few-public-methods
 class AddArgsAction(experiment.CLIAddArgsAction):
     '''
@@ -158,8 +153,8 @@ class Experiment:
                 logger.log('ERROR: EOF reached before time table found')
                 sys.exit()
 
-            start = table_pos + SO_OFFSET
-            end = table_pos + SO_OFFSET + SO_WIDTH
+            start = table_pos + 5
+            end = table_pos + 20
             time_table = lines[start:end]  # Isolate table lines
             results = []
 
