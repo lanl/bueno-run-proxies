@@ -55,22 +55,8 @@ above config file rather than directly in bueno_snap.py. While the settings
 are mirrored in the run script, the input file is consulted at run time and
 the defaults are overridden with the parameters found in experiments/config.
 
-However, there are some additional options that can be modified that pertain
-to acquiring the timing table from the SNAP output file. Should more or
-alternative data found in SNAP's output file be the subject of interest, the
-run script can easily be modified to read more or less lines when gathering
-data.
-
-```Python
-# snap output table variables
-SO_OFFSET = 5
-SO_WIDTH = 15
-
-# used later in the parse_snapfile def:
-start = table_pos + SO_OFFSET
-end = table_pos + SO_OFFSET + SO_WIDTH
-time_table = lines[start:end]  # isolate table lines
-```
+Specific or additional inferences, should be taken from the complete list
+of timing information recorded for post analysis.
 
 <br/>
 
