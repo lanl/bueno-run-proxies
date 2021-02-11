@@ -1,8 +1,10 @@
 # Custom bueno runscript for SN Application Proxy (SNAP).
 # --csv-output data.csv
 # --description 'bueno run script for SNAP.'
-# --executable '~/SNAP_build/src/gsnap'
+# --executable '~/SNAP/src/gsnap'
 # --input './experiments/config'
 # --name 'snap'
-# --runcmds "4, 10, 'mpiexec -n %n', 'nidx'"
-{} ./experiments/input ./experiments/output
+# --runcmds "4, 18, 'mpirun -n %n', 'nidx'"
+# --snapinfile './experiments/input'
+# --snapoutfile './experiments/output'
+{} {} {}
