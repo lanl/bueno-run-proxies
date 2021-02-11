@@ -12,7 +12,6 @@ Bueno run script for the SN Application Proxy (SNAP).
 import re
 import io
 import csv
-import sys
 import typing
 
 from bueno.public import container
@@ -20,11 +19,6 @@ from bueno.public import experiment
 from bueno.public import logger
 from bueno.public import metadata
 from bueno.public import utils
-
-
-# SNAP output table variables.
-SO_OFFSET = 5
-SO_WIDTH = 15
 
 
 # pylint: disable=too-few-public-methods
@@ -76,6 +70,24 @@ class Experiment:
         self.emit_conf()  # Emit config to terminal
         self.add_assets()  # Copy input file to metadata record
 
+        # Label of data to be obtained.
+        self.keywords = [
+            'Parallel Setup',
+            'Input',
+            'Setup',
+            'Solve',
+            'Parameter Setup',
+            'Outer Source',
+            'Inner Iterations',
+            'Inner Source',
+            'Transport Sweeps',
+            'Inner Misc Ops',
+            'Solution Misc Ops',
+            'Output',
+            'Total Execution time',
+            'Grind Time (nanoseconds)',
+        ]
+
     def emit_conf(self) -> None:
         '''
         Display & record Experiment configuration.
@@ -112,20 +124,22 @@ class Experiment:
 
         updated = []
         for row in lines:
-            if row[2:6] == 'npey':
-                updated.append(F'  npey={dimensions[0]}\n')
-            elif row[2:6] == 'npez':
-                updated.append(F'  npez={dimensions[1]}\n')
-            elif row[2:4] == 'ny':
-                updated.append(F'  ny={dimensions[0]}\n')
-            elif row[2:4] == 'nz':
-                updated.append(F'  nz={dimensions[1]}\n')
+            trim = row.strip()
+            if trim.startswith('npey'):
+                updated.append(F'      npey={dimensions[0]}\n')
+            elif trim.startswith('npez'):
+                updated.append(F'      npez={dimensions[1]}\n')
+            elif trim.startswith('ny'):
+                updated.append(F'      ny={dimensions[0]}\n')
+            elif trim.startswith('nz'):
+                updated.append(F'      nz={dimensions[1]}\n')
             else:
                 updated.append(row)
 
         # overwrite SNAP input file
         with open(self.snap_input, 'wt') as in_file:
             in_file.writelines(updated)
+        logger.log('')
 
     def post_action(self, **kwargs: typing.Dict[str, str]) -> None:
         '''
@@ -145,37 +159,31 @@ class Experiment:
         '''
         with open(self.snap_output) as out_file:
             lines = out_file.readlines()
-            table_pos = -1  # Time table position
+            time_table = []
 
-            for num, line in enumerate(lines):
-                # Search for time table
-                if 'keyword Timing Summary' in line:
-                    table_pos = num
-                    logger.log(F'Found time table on line: {table_pos}\n')
+            # Search for time table.
+            for pos, line in enumerate(lines):
+                if line.lstrip().startswith('keyword Timing Summary'):
+                    logger.log(F'Found time table on line: {pos}\n')
+                    time_table = lines[pos + 1:]
+                    break
 
-            # No table found.
-            if table_pos == -1:
-                logger.log('ERROR: EOF reached before time table found')
-                sys.exit()
-
-            start = table_pos + SO_OFFSET
-            end = table_pos + SO_OFFSET + SO_WIDTH
-            time_table = lines[start:end]  # Isolate table lines
+            # Collect iteration results.
             results = []
-
-            # Format data string for yaml file
             for row in time_table:
-                row = row.strip()
-                row = re.sub(r'[ ]{2,}', ':', row)
+                # trim white space, su
+                trimmed = re.sub(r'[ ]{2,}', ':', row.strip())
 
-                if row == '':  # Skip empty
+                # Skip empty or decorative
+                if trimmed == '' or '*' in trimmed:
                     continue
 
-                # Else append formatted item.
-                logger.log(F'[data] {row}')
-                results.append(row.split(':')[1])
+                label, value = trimmed.split(':')
 
-            # Add items to metadata dictionary.
+                if label in self.keywords:
+                    results.append(value)
+
+            # Add iteration results to experiment data.
             self.data['results'].append(results)
 
             # Save dictionary data.
@@ -197,7 +205,9 @@ class Experiment:
         pruns = experiment.runcmds(rcmd[0], rcmd[1], rcmd[2], rcmd[3])
 
         executable = self.config.args.executable
-        appargs = genspec.format(executable)
+        s_input = self.snap_input
+        s_output = self.snap_output
+        appargs = genspec.format(executable, s_input, s_output)
         for prun in pruns:
             logger.log('')
             container.prun(
@@ -220,20 +230,17 @@ class Experiment:
         dataraw = csv.writer(sio)
 
         # Column header
-        header = [
-            'Parallel Setup', 'Input', 'Setup', 'Solve', 'Parameter Setup',
-            'Outer Source', 'Inner Iteration', 'Inner Source',
-            'Transport Sweet', 'Inner Misc Ops', 'Solution Misc Ops',
-            'Output', 'Total Execution Time', 'Grind Time', 'Command'
-        ]
+        header = self.keywords
         dataraw.writerow(header)
         table.addrow(header)
 
         # Populate csv table.
         for index, entry in enumerate(self.data['results']):
+            table.addrow(entry)  # Terminal table.
+
+            # Add command column to csv file.
             entry.append(self.data['commands'][index])
             dataraw.writerow(entry)
-            table.addrow(entry)
 
         csvfname = self.csv_output
         metadata.add_asset(metadata.StringIOAsset(sio, csvfname))
