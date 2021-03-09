@@ -1,0 +1,9 @@
+# Custom bueno runscript for the Branson mini-app.
+# --csv-output 'data.csv'
+# --description 'bueno run script for the Branson mini-app.'
+# --executable '~/branson/BRANSON'
+# --input './experiments/config'
+# --name 'branson'
+# --runcmds "8, 12, 'mpirun -n %n', 'nidx'"
+# --bransonfile './experiments/cube_decomp_test.xml'
+{} {}
