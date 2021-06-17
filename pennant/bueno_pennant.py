@@ -7,8 +7,7 @@
 #
 
 '''
-Bueno run script for the unstructured mesh physics mini-app,
-PENNANT
+bueno run script for the unstructured mesh physics mini-app, PENNANT
 '''
 
 import re
@@ -182,7 +181,7 @@ def main(argv: typing.List[str]) -> None:
     desc = 'bueno run script for PENNANT experiments.'
 
     # Default Configuration.
-    defaults = experiment.CannedCLIConfiguration.Defaults
+    defaults = experiment.DefaultCLIConfiguration.Defaults
     defaults.name = 'pennant'
     defaults.description = desc
     defaults.input = './experiments/config.txt'
@@ -191,7 +190,7 @@ def main(argv: typing.List[str]) -> None:
     defaults.csv_output = 'data.csv'
 
     # Compile and parse configuration.
-    config = experiment.CannedCLIConfiguration(desc, argv, defaults)
+    config = experiment.DefaultCLIConfiguration(desc, argv, defaults)
     config.addargs(AddArgsAction)
     config.parseargs()
 

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2019-2020 Triad National Security, LLC
+# Copyright (c) 2019-2021 Triad National Security, LLC
 #                         All rights reserved.
 #
 # This file is part of the bueno project. See the LICENSE file at the
@@ -128,7 +128,7 @@ def main(argv):
     # Program description
     desc = 'bueno run script for Laghos experiments.'
     # Default values
-    defaults = experiment.CannedCLIConfiguration.Defaults
+    defaults = experiment.DefaultCLIConfiguration.Defaults
     defaults.csv_output = 'data.csv'
     defaults.description = experiment.name()
     defaults.executable = '/XSBench/openmp-threading/XSBench'
@@ -136,7 +136,7 @@ def main(argv):
     defaults.name = 'xsbench'
     defaults.runcmds = (0, 2, 'srun -n %n', 'nidx + 1')
     # Initial configuration
-    config = experiment.CannedCLIConfiguration(desc, argv, defaults)
+    config = experiment.DefaultCLIConfiguration(desc, argv, defaults)
     # Parse provided arguments
     config.parseargs()
     for genspec in experiment.readgs(config.args.input, config):

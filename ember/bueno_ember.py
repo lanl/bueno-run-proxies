@@ -186,7 +186,7 @@ def main(argv: typing.List[str]) -> None:
     desc = 'bueno run script for Ember experiment'
 
     # Default values
-    defaults = experiment.CannedCLIConfiguration.Defaults
+    defaults = experiment.DefaultCLIConfiguration.Defaults
     defaults.name = 'ember'
     defaults.description = desc
     defaults.executable = '~/ember/mpi/halo3d/halo3d'
@@ -195,7 +195,7 @@ def main(argv: typing.List[str]) -> None:
     defaults.runcmds = (4, 6, 'mpirun -n %n', 'nidx')
 
     # Initial configuration
-    config = experiment.CannedCLIConfiguration(desc, argv, defaults)
+    config = experiment.DefaultCLIConfiguration(desc, argv, defaults)
     config.addargs(AddArgsAction)
 
     # Parse provided arguments.

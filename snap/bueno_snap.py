@@ -1,12 +1,13 @@
 #
-# Written by Jacob Dickens, Sept-2020
+# Copyright (c) 2019-2021 Triad National Security, LLC
+#                         All rights reserved.
 #
 # This file is part of the bueno project. See the LICENSE file at the
 # top-level directory of this distribution for more information.
 #
 
 '''
-Bueno run script for the SN Application Proxy (SNAP).
+bueno run script for the SN Application Proxy (SNAP).
 '''
 
 import re
@@ -256,7 +257,7 @@ def main(argv: typing.List[str]) -> None:
     desc = 'bueno run script for SNAP experiments.'
 
     # Default values
-    defaults = experiment.CannedCLIConfiguration.Defaults
+    defaults = experiment.DefaultCLIConfiguration.Defaults
     defaults.csv_output = './data.csv'
     defaults.description = desc
     defaults.executable = '~/SNAP_build/src/gsnap'
@@ -265,7 +266,7 @@ def main(argv: typing.List[str]) -> None:
     defaults.runcmds = (4, 6, 'mpiexec -n %n', 'nidx')
 
     # Initial configuration
-    config = experiment.CannedCLIConfiguration(desc, argv, defaults)
+    config = experiment.DefaultCLIConfiguration(desc, argv, defaults)
     config.addargs(AddArgsAction)
 
     # Parse provided arguments.
