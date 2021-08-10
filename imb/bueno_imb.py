@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2019-2020 Triad National Security, LLC
+# Copyright (c) 2019-2021 Triad National Security, LLC
 #                         All rights reserved.
 #
 # This file is part of the bueno project. See the LICENSE file at the
@@ -18,6 +18,7 @@ import re
 from collections import defaultdict
 
 from bueno.public import container
+from bueno.public import datasink
 from bueno.public import experiment
 from bueno.public import logger
 from bueno.public import metadata
@@ -232,7 +233,7 @@ class BenchmarkDatum:
         logger.log(F"# mode: {self.mode}")
         logger.log(F"#{'-'*79}")
 
-        table = utils.Table()
+        table = datasink.Table()
         sio = io.StringIO(newline=None)
         dataw = csv.writer(sio)
 

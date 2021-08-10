@@ -15,6 +15,7 @@ import io
 import re
 
 from bueno.public import container
+from bueno.public import datasink
 from bueno.public import experiment
 from bueno.public import logger
 from bueno.public import metadata
@@ -107,7 +108,7 @@ class Experiment:
             self.data['tlups']
         )
 
-        table = utils.Table()
+        table = datasink.Table()
         sio = io.StringIO(newline=None)
         dataw = csv.writer(sio)
         dataw.writerow([F'## {self.config.args.description}'])
