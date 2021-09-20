@@ -285,13 +285,9 @@ class BenchmarkData:
 
 
 class Configuration(experiment.CLIConfiguration):
-    def __init__(self, desc, argv):
+    def __init__(self, desc, argv, defaults):
+        self.defaults = defaults
         super().__init__(desc, argv)
-        self.parseargs()
-        # Get and process any arguments provided. Do this as early as possible
-        # to see an up-to-date version of the config.
-        if not utils.emptystr(self.args.input):
-            experiment.readgs(self.args.input, self)
 
     def _addargs(self):
         self.argparser.add_argument(
@@ -302,7 +298,7 @@ class Configuration(experiment.CLIConfiguration):
                  ' (default: %(default)s)'
                  F" (choices: {','.join(Benchmark.available())})",
             required=False,
-            default=Configuration.Defaults.benchmarks
+            default=self.defaults.benchmarks
         )
 
         self.argparser.add_argument(
@@ -312,7 +308,7 @@ class Configuration(experiment.CLIConfiguration):
             help='Specifies the base directory of the IMB binaries.'
                  ' (default: %(default)s)',
             required=False,
-            default=Configuration.Defaults.bin_dir
+            default=self.defaults.bin_dir
         )
 
         self.argparser.add_argument(
@@ -322,7 +318,7 @@ class Configuration(experiment.CLIConfiguration):
             help='Describes the experiment.'
                  ' (default: %(default)s)',
             required=False,
-            default=Configuration.Defaults.description
+            default=self.defaults.description
         )
 
         self.argparser.add_argument(
@@ -330,7 +326,8 @@ class Configuration(experiment.CLIConfiguration):
             type=str,
             metavar='INP',
             help='Specifies the path to an experiment input.',
-            required=False
+            required=False,
+            default=self.defaults.input
         )
 
         self.argparser.add_argument(
@@ -339,22 +336,14 @@ class Configuration(experiment.CLIConfiguration):
             help='Names the experiment.'
                  ' (default: %(default)s)',
             required=False,
-            default=Configuration.Defaults.experiment_name
+            default=self.defaults.experiment_name
         )
         # Add pre-canned options to deal with experiment.runcmds() input.
         experiment.cli_args_add_runcmds_option(
             self,
             opt_required=False,
-            opt_default=Configuration.Defaults.rcmds
+            opt_default=self.defaults.rcmds
         )
-
-    class Defaults:
-        benchmarks = Benchmark.default_list()
-        bin_dir = '/IMB'
-        description = 'Intel MPI Benchmarks'
-        experiment_name = 'imb'
-        input = ''
-        rcmds = (0, 2, 'srun -n %n', 'nidx + 1')
 
 
 class Experiment:
@@ -397,7 +386,7 @@ class Experiment:
         self.data['commands'].append(kwargs.pop('command'))
         self.data['bmdata'].append(parser.data())
 
-    def run(self):
+    def run(self, genspec):
         def _get_numpe(prun):
             numpe_match = re.search(r'\s+-n\s?(?P<numpe>[0-9]+)', prun)
             if numpe_match is None:
@@ -439,18 +428,23 @@ class Experiment:
             bmdata.tabulate()
 
 
-class Program:
-    def __init__(self, argv):
-        self.desc = 'bueno run script for IMB.'
-        # Experiment configuration, data, and analysis.
-        self.experiment = Experiment(Configuration(self.desc, argv))
-
-    def run(self):
-        self.experiment.run()
-        self.experiment.report()
+class Defaults:
+    benchmarks = Benchmark.default_list()
+    bin_dir = '/IMB'
+    description = 'Intel MPI Benchmarks'
+    experiment_name = 'imb'
+    input = 'experiments/mpi1'
+    rcmds = (0, 2, 'srun -n %n', 'nidx + 1')
 
 
 def main(argv):
-    Program(argv).run()
+    config = Configuration(Defaults.description, argv, Defaults)
+    config.parseargs()
+
+    for genspec in experiment.readgs(config.args.input, config):
+        # Note that config is updated by readgs after each iteration.
+        exprmnt = Experiment(config)
+        exprmnt.run(genspec)
+        exprmnt.report()
 
 # vim: ft=python ts=4 sts=4 sw=4 expandtab
