@@ -3,9 +3,9 @@
 # --description 'IMB-MPI1'
 # --bin-dir /IMB
 # --benchmarks IMB-MPI1
-# --runcmds "0, 1, 'srun --mpi=pmi2 -n %n', 'nidx + 1'"
+# --runcmds "0, 1, 'srun -n %n', 'nidx + 1'"
 {}
 # --benchmarks IMB-RMA
 # --description 'IMB-RMA'
-# --runcmds "1, 2, 'srun --mpi=pmi2 -n %n', 'nidx + 1'"
+# --runcmds "1, 2, 'srun -n %n', 'nidx + 1'"
 {}
