@@ -386,7 +386,7 @@ class Experiment:
         self.data['commands'].append(kwargs.pop('command'))
         self.data['bmdata'].append(parser.data())
 
-    def run(self, genspec):
+    def run(self):
         def _get_numpe(prun):
             numpe_match = re.search(r'\s+-n\s?(?P<numpe>[0-9]+)', prun)
             if numpe_match is None:
@@ -444,7 +444,7 @@ def main(argv):
     for genspec in experiment.readgs(config.args.input, config):
         # Note that config is updated by readgs after each iteration.
         exprmnt = Experiment(config)
-        exprmnt.run(genspec)
+        exprmnt.run()
         exprmnt.report()
 
 # vim: ft=python ts=4 sts=4 sw=4 expandtab

@@ -1,0 +1,6 @@
+# Runs IMB-MPI1 benchmarks.
+# --description 'IMB-MPI1,IMB-RMA'
+# --bin-dir /IMB
+# --benchmarks IMB-MPI1,IMB-RMA
+# --runcmds "0, 3, 'srun --mpi=pmi2 -n %n', 'nidx + 1'"
+{}
