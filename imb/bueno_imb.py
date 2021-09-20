@@ -287,12 +287,13 @@ class BenchmarkData:
 class Configuration(experiment.CLIConfiguration):
     def __init__(self, desc, argv):
         super().__init__(desc, argv)
+        self.parseargs()
         # Get and process any arguments provided. Do this as early as possible
         # to see an up-to-date version of the config.
         if not utils.emptystr(self.args.input):
             experiment.readgs(self.args.input, self)
 
-    def addargs(self):
+    def _addargs(self):
         self.argparser.add_argument(
             '--benchmarks',
             type=str,
@@ -352,6 +353,7 @@ class Configuration(experiment.CLIConfiguration):
         bin_dir = '/IMB'
         description = 'Intel MPI Benchmarks'
         experiment_name = 'imb'
+        input = ''
         rcmds = (0, 2, 'srun -n %n', 'nidx + 1')
 
 
