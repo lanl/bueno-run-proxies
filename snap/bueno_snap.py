@@ -19,7 +19,7 @@ from bueno.public import container
 from bueno.public import datasink
 from bueno.public import experiment
 from bueno.public import logger
-from bueno.public import metadata
+from bueno.public import data
 from bueno.public import utils
 
 
@@ -70,7 +70,7 @@ class Experiment:
         }
 
         self.emit_conf()  # Emit config to terminal
-        self.add_assets()  # Copy input file to metadata record
+        self.add_assets()  # Copy input file to data record
 
         # Label of data to be obtained.
         self.keywords = [
@@ -100,11 +100,11 @@ class Experiment:
 
     def add_assets(self) -> None:
         '''
-        Backup input and output files in metadata (including snap files).
+        Backup input and output files in data (including snap files).
         '''
-        metadata.add_asset(metadata.FileAsset(self.config.args.input))
-        metadata.add_asset(metadata.FileAsset(self.snap_input))
-        metadata.add_asset(metadata.FileAsset(self.snap_output))
+        data.add_asset(data.FileAsset(self.config.args.input))
+        data.add_asset(data.FileAsset(self.snap_input))
+        data.add_asset(data.FileAsset(self.snap_output))
 
     def pre_action(self, **kwargs: typing.Dict[str, str]) -> None:
         '''
@@ -145,7 +145,7 @@ class Experiment:
 
     def post_action(self, **kwargs: typing.Dict[str, str]) -> None:
         '''
-        Custom post action: metadata collection.
+        Custom post action: data collection.
         '''
         logger.emlog('# POST-ACTION')
         logger.log('Retrieving SNAP output...')
@@ -189,10 +189,10 @@ class Experiment:
             self.data['results'].append(results)
 
             # Save dictionary data.
-            logger.log('\nAdding metadata file...')
-            metadata.add_asset(metadata.YAMLDictAsset(
+            logger.log('\nAdding data file...')
+            data.add_asset(data.YAMLDictAsset(
                 self.data,
-                'timing-metadata'
+                'timing-data'
             ))
             return
 
@@ -245,7 +245,7 @@ class Experiment:
             dataraw.writerow(entry)
 
         csvfname = self.csv_output
-        metadata.add_asset(metadata.StringIOAsset(sio, csvfname))
+        data.add_asset(data.StringIOAsset(sio, csvfname))
         table.emit()
         logger.log('')
 

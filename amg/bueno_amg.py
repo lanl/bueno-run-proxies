@@ -18,7 +18,7 @@ from bueno.public import container
 from bueno.public import datasink
 from bueno.public import experiment
 from bueno.public import logger
-from bueno.public import metadata
+from bueno.public import data
 from bueno.public import utils
 
 
@@ -40,7 +40,7 @@ class Experiment:
         }
         # Emit program configuration to terminal.
         self.emit_conf()
-        # Add assets to collection of metadata.
+        # Add assets to collection of data.
         self.add_assets()
 
     def emit_conf(self):
@@ -49,7 +49,7 @@ class Experiment:
         utils.yamlp(pcd, 'Program')
 
     def add_assets(self):
-        metadata.add_asset(metadata.FileAsset(self.config.args.input))
+        data.add_asset(data.FileAsset(self.config.args.input))
 
     def post_action(self, **kwargs):
         cmd = kwargs.pop('command')
@@ -124,7 +124,7 @@ class Experiment:
             'fom'
         ]
 
-        data = zip(
+        edata = zip(
             self.data['solver_id'],
             self.data['numpe'],
             self.data['tottime'],
@@ -139,13 +139,13 @@ class Experiment:
         dataw.writerow([F'## {self.config.args.description}'])
         dataw.writerow(header)
         table.addrow(header, withrule=True)
-        for solid, numpe, tott, nxyz, pxyz, fom in data:
+        for solid, numpe, tott, nxyz, pxyz, fom in edata:
             row = [solid, numpe, tott, nxyz, pxyz, fom]
             dataw.writerow(row)
             table.addrow(row)
 
         csvfname = self.config.args.csv_output
-        metadata.add_asset(metadata.StringIOAsset(sio, csvfname))
+        data.add_asset(data.StringIOAsset(sio, csvfname))
         table.emit()
         logger.log('')
 
@@ -156,7 +156,7 @@ def main(argv):
     # Default values
     defaults = experiment.DefaultCLIConfiguration.Defaults
     defaults.csv_output = 'data.csv'
-    defaults.description = experiment.name()
+    defaults.description = str(experiment.name())
     defaults.executable = '/AMG/test/amg'
     defaults.input = 'experiments/quick'
     defaults.name = 'AMG'

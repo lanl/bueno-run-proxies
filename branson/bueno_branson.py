@@ -19,7 +19,7 @@ from bueno.public import container
 from bueno.public import datasink
 from bueno.public import experiment
 from bueno.public import logger
-from bueno.public import metadata
+from bueno.public import data
 from bueno.public import utils
 
 
@@ -81,14 +81,14 @@ class Experiment:
 
     def add_assets(self) -> None:
         '''
-        Backup input and output files in metadata
+        Backup input and output files in data
         '''
-        metadata.add_asset(metadata.FileAsset(self.config.args.input))
-        metadata.add_asset(metadata.FileAsset(self.config.args.bransonfile))
+        data.add_asset(data.FileAsset(self.config.args.input))
+        data.add_asset(data.FileAsset(self.config.args.bransonfile))
 
     def post_action(self, **kwargs: typing.Dict[str, str]) -> None:
         '''
-        Custom post action: metadata collection for report
+        Custom post action: data collection for report
         '''
         logger.emlog('# Post-ACTION')
         logger.log('Retrieving branson output...')
@@ -176,7 +176,7 @@ class Experiment:
 
         # Write table to csv ad display to terminal.
         csvname = self.config.args.csv_output
-        metadata.add_asset(metadata.StringIOAsset(sio, csvname))
+        data.add_asset(data.StringIOAsset(sio, csvname))
         table.emit()
         logger.log('')
 

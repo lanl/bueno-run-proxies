@@ -21,7 +21,7 @@ from bueno.public import container
 from bueno.public import datasink
 from bueno.public import experiment
 from bueno.public import logger
-from bueno.public import metadata
+from bueno.public import data
 from bueno.public import utils
 
 
@@ -241,7 +241,7 @@ class BenchmarkDatum:
                  ('window_size', self.window_size),
                  ('mode', self.mode)]
 
-        # Write metadata header to csv file. Is this the best way to do this?
+        # Write data header to csv file. Is this the best way to do this?
         for coll in metad:
             key = coll[0]
             val = coll[1]
@@ -268,7 +268,7 @@ class BenchmarkDatum:
             F'numpe-{label.numpe}',
             F'runid-{label.generation}'
         )
-        metadata.add_asset(metadata.StringIOAsset(sio, csvfname, opath))
+        data.add_asset(data.StringIOAsset(sio, csvfname, opath))
 
 
 class BenchmarkData:
@@ -361,12 +361,12 @@ class Experiment:
         }
         # Emit program configuration to terminal.
         self.emit_conf()
-        # Add assets to collection of metadata.
+        # Add assets to collection of data.
         self.add_assets()
 
     def add_assets(self):
         if not utils.emptystr(self.config.args.input):
-            metadata.add_asset(metadata.FileAsset(self.config.args.input))
+            data.add_asset(data.FileAsset(self.config.args.input))
 
     def emit_conf(self):
         pcd = dict()

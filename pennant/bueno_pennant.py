@@ -20,7 +20,7 @@ from bueno.public import container
 from bueno.public import datasink
 from bueno.public import experiment
 from bueno.public import logger
-from bueno.public import metadata
+from bueno.public import data
 from bueno.public import utils
 
 
@@ -75,8 +75,8 @@ class Experiment:
         '''
         Select additional assets to copy
         '''
-        metadata.add_asset(metadata.FileAsset(self.config.args.input))
-        metadata.add_asset(metadata.FileAsset(self.pinfile))
+        data.add_asset(data.FileAsset(self.config.args.input))
+        data.add_asset(data.FileAsset(self.pinfile))
 
     def post_action(self, **kwargs: typing.Dict[str, str]) -> None:
         '''
@@ -169,7 +169,7 @@ class Experiment:
 
         # Write table to csv & display to terminal.
         csvname = self.config.args.csv_output
-        metadata.add_asset(metadata.StringIOAsset(sio, csvname))
+        data.add_asset(data.StringIOAsset(sio, csvname))
         table.emit()
         logger.log('')
 

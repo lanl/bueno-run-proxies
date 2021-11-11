@@ -18,7 +18,7 @@ from bueno.public import container
 from bueno.public import datasink
 from bueno.public import experiment
 from bueno.public import logger
-from bueno.public import metadata
+from bueno.public import data
 from bueno.public import utils
 
 
@@ -71,7 +71,7 @@ class Experiment:
         }
 
         self.emit_conf()  # Emit config to terminal
-        self.add_assets()  # Copy input file to metadata
+        self.add_assets()  # Copy input file to data
 
         # Optional property: manual factors
         self.manual_factors: typing.List[typing.List[int]] = []
@@ -88,9 +88,9 @@ class Experiment:
 
     def add_assets(self) -> None:
         '''
-        Backup metadata assets
+        Backup data assets
         '''
-        metadata.add_asset(metadata.FileAsset(self.config.args.input))
+        data.add_asset(data.FileAsset(self.config.args.input))
 
     def post_action(self, **kwargs: typing.Dict[str, str]) -> None:
         '''
@@ -174,7 +174,7 @@ class Experiment:
 
         # Write table to csv & display to terminal.
         csvname = self.config.args.csv_output
-        metadata.add_asset(metadata.StringIOAsset(sio, csvname))
+        data.add_asset(data.StringIOAsset(sio, csvname))
         table.emit()
         logger.log('')
 

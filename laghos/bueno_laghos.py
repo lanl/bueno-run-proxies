@@ -18,7 +18,7 @@ from bueno.public import container
 from bueno.public import datasink
 from bueno.public import experiment
 from bueno.public import logger
-from bueno.public import metadata
+from bueno.public import data
 from bueno.public import utils
 
 # Import extras
@@ -27,7 +27,7 @@ try:
 except ImportError:
     pass
 else:
-    metadata.add_asset(metadata.PythonModuleAsset(icaptdb))
+    data.add_asset(data.PythonModuleAsset(icaptdb))
 
 
 class FOMFactory:
@@ -62,7 +62,7 @@ class Experiment:
         }
         # Emit program configuration to terminal.
         self.emit_conf()
-        # Add assets to collection of metadata.
+        # Add assets to collection of data.
         self.add_assets()
 
     def emit_conf(self):
@@ -71,7 +71,7 @@ class Experiment:
         utils.yamlp(pcd, 'Program')
 
     def add_assets(self):
-        metadata.add_asset(metadata.FileAsset(self.config.args.input))
+        data.add_asset(data.FileAsset(self.config.args.input))
 
     def post_action(self, **kwargs):
         cmd = kwargs.pop('command')
@@ -128,7 +128,7 @@ class Experiment:
             'cgl2'
         ]
 
-        data = zip(
+        edata = zip(
             self.data['command'],
             self.data['starttime'],
             self.data['numpe'],
@@ -148,7 +148,7 @@ class Experiment:
         dataw.writerow([F'## {self.config.args.description}'])
         dataw.writerow(header)
         table.addrow(header, withrule=True)
-        for cmd, stime, numpe, nthread, tott, cgh1, cgl2 in data:
+        for cmd, stime, numpe, nthread, tott, cgh1, cgl2 in edata:
             row = [numpe, tott, cgh1, cgl2]
             dataw.writerow(row)
             table.addrow(row)
@@ -164,7 +164,7 @@ class Experiment:
                 )
 
         csvfname = self.config.args.csv_output
-        metadata.add_asset(metadata.StringIOAsset(sio, csvfname))
+        data.add_asset(data.StringIOAsset(sio, csvfname))
         table.emit()
         logger.log('')
 
@@ -175,7 +175,7 @@ def main(argv):
     # Default values
     defaults = experiment.DefaultCLIConfiguration.Defaults
     defaults.csv_output = 'data.csv'
-    defaults.description = experiment.name()
+    defaults.description = str(experiment.name())
     defaults.executable = '/laghos/Laghos/laghos'
     defaults.input = 'experiments/quick-sedov-blast2D'
     defaults.name = 'laghos'
